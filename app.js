@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FormulaPaddock F1 Reel Engine — Google Drive Auto-Save & Reel Engine
+   FormulaPaddock F1 Reel Engine — Embeddable Live Engine & Auto URL Extractor
    ========================================================================== */
 
 const state = {
@@ -173,6 +173,14 @@ function initApp() {
   renderScenes();
   renderGallery();
   
+  // Auto-extract URL if passed via query parameter ?url=...
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialUrl = urlParams.get('url');
+  if (initialUrl) {
+    if (dom.articleUrlInput) dom.articleUrlInput.value = initialUrl;
+    fetchWordPressArticleViaLocalProxy(initialUrl);
+  }
+
   // Start Canvas Engine
   startCanvasLoop();
 }
@@ -1012,7 +1020,6 @@ function startMediaRecorderExport() {
     const blob = new Blob(recordedChunks, { type: options.mimeType });
     const url = URL.createObjectURL(blob);
 
-    // 1. Browser Download
     const a = document.createElement('a');
     a.href = url;
     a.download = `FormulaPaddock_F1Reel_Drive_${Date.now()}.webm`;
@@ -1020,7 +1027,6 @@ function startMediaRecorderExport() {
     a.click();
     document.body.removeChild(a);
 
-    // 2. Automatic Upload / Save to Google Drive Folder (1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K)
     try {
       const driveRes = await fetch('/api/save-drive', {
         method: 'POST',
