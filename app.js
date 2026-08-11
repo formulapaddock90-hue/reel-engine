@@ -987,7 +987,9 @@ function startMediaRecorderExport() {
   initAudioContext();
   if (audioCtx.state === 'suspended') audioCtx.resume();
 
-  dom.recStatusText.innerHTML = `<i data-lucide="loader" class="spin"></i> Registrazione Video 1080x1920 MP4 + Auto-Save Drive 1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K...`;
+  if (dom.recStatusText) {
+    dom.recStatusText.innerHTML = `<i data-lucide="loader" class="spin"></i> Registrazione Video 1080x1920 MP4 + Auto-Save Drive 1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K...`;
+  }
   if (window.lucide) lucide.createIcons();
 
   state.currentTime = 0;
@@ -1037,7 +1039,9 @@ function startMediaRecorderExport() {
       
       if (driveData.status === 'SUCCESS') {
         showToast(`☁️ Reel salvato automaticamente su Google Drive (Cartella ${driveData.drive_folder_id})!`);
-        dom.recStatusText.innerHTML = `<i data-lucide="check-circle-2"></i> Salvato su Google Drive (1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K)!`;
+        if (dom.recStatusText) {
+          dom.recStatusText.innerHTML = `<i data-lucide="check-circle-2"></i> Salvato su Google Drive (1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K)!`;
+        }
       }
     } catch (e) {
       console.warn('Drive save info:', e);
