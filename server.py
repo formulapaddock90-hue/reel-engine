@@ -1,5 +1,5 @@
 """
-FormulaPaddock Reel Engine — Render.com / Cloud Server 24/7
+FormulaPaddock Reel Engine — Render.com Cloud API Render Server 24/7
 """
 
 import http.server
@@ -13,6 +13,8 @@ import sys
 import mimetypes
 import time
 import ssl
+import subprocess
+import random
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -21,11 +23,13 @@ PORT = int(os.environ.get('PORT', 5173))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXPORTS_DIR = os.path.join(BASE_DIR, 'exports')
 DOWNLOADS_DIR = os.path.expanduser(r'~\Downloads')
+AUDIO_DIR = os.path.join(BASE_DIR, 'assets', 'audio')
 DRIVE_FOLDER_ID = '1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K'
 
 os.makedirs(EXPORTS_DIR, exist_ok=True)
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
-# Create unverified SSL context for scraping external HTTPS links smoothly
+# SSL context for remote image downloads
 ssl_ctx = ssl.create_default_context()
 ssl_ctx.check_hostname = False
 ssl_ctx.verify_mode = ssl.CERT_NONE
@@ -52,8 +56,116 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(404, "File not found")
 
     def do_POST(self):
-        # 1. AUTO-SAVE REEL TO EXPORTS & GOOGLE DRIVE
-        if self.path.startswith('/api/save-drive'):
+        # 1. RENDER DIRECT REEL MP4 API FOR REMOTE PHP HOST
+        if self.path.startswith('/api/render-reel'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            body_bytes = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(body_bytes.decode('utf-8'))
+            except Exception:
+                data = {}
+
+            overlay_text = data.get('text', 'FORMULAPADDOCK.IT • REEL F1')
+            img_url = data.get('image_url', '')
+
+            # Download or use local image
+            temp_img = os.path.join(EXPORTS_DIR, f"temp_{int(time.time())}.jpg")
+            default_img = os.path.join(BASE_DIR, 'assets', 'images', 'tech.jpg')
+
+            if img_url:
+                try:
+                    req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, context=ssl_ctx, timeout=10) as resp:
+                        with open(temp_img, 'wb') as f:
+                            f.write(resp.read())
+                    input_img = temp_img
+                except Exception:
+                    input_img = default_img
+            else:
+                input_img = default_img
+
+            # Pick Random MP3 Track
+            audio_files = [os.path.join(AUDIO_DIR, f) for f in os.listdir(AUDIO_DIR) if f.lower().endswith('.mp3')]
+            chosen_audio = random.choice(audio_files) if audio_files else None
+
+            # Render MP4 Video via FFmpeg
+            output_mp4 = os.path.join(EXPORTS_DIR, f"reel_{int(time.time())}.mp4")
+            
+            try:
+                targetW = 1080
+                targetH = 1920
+                duration = 15
+                fps = 30
+                total_frames = duration * fps
+
+                clean_text = overlay_text.replace("'", "").replace(":", "-")
+                if len(clean_text) > 80:
+                    clean_text = clean_text[:80] + "..."
+
+                # FFmpeg filters
+                vf = (
+                    f"scale=8000:-1,"
+                    f"zoompan=z='min(zoom+0.0015,1.15)':d={total_frames}:s={targetW}x{targetH}:fps={fps},"
+                    f"drawbox=x=40:y=60:w=420:h=80:color=black@0.85:t=fill,"
+                    f"drawbox=x=40:y=60:w=420:h=80:color=#e10600@1.0:t=4,"
+                    f"drawtext=text='FORMULAPADDOCK.IT':fontcolor=white:fontsize=32:x=60:y=85,"
+                    f"drawbox=x={targetW-360}:y=60:w=320:h=160:color=black@0.85:t=fill,"
+                    f"drawbox=x={targetW-360}:y=60:w=320:h=160:color=white@0.2:t=3,"
+                    f"drawtext=text='334 KM/H':fontcolor=#ffeb3b:fontsize=48:x={targetW-330}:y=90,"
+                    f"drawtext=text='DRS ATTIVO':fontcolor=#00e676:fontsize=22:x={targetW-330}:y=160,"
+                    f"drawbox=x=60:y={targetH-360}:w={targetW-120}:h=240:color=black@0.9:t=fill:enable='lt(t,12)',"
+                    f"drawbox=x=60:y={targetH-360}:w=16:h=240:color=#e10600@1.0:t=fill:enable='lt(t,12)',"
+                    f"drawtext=text='FORMULAPADDOCK.IT • REEL F1':fontcolor=#ffeb3b:fontsize=26:x=100:y={targetH-320}:enable='lt(t,12)',"
+                    f"drawtext=text='{clean_text}':fontcolor=white:fontsize=44:x=100:y={targetH-260}:enable='lt(t,12)',"
+                    f"drawbox=x=0:y=0:w={targetW}:h={targetH}:color=#08090d@0.98:t=fill:enable='gte(t,12)',"
+                    f"drawbox=x=40:y=40:w={targetW-80}:h={targetH-80}:color=#e10600@1.0:t=4:enable='gte(t,12)',"
+                    f"drawbox=x=80:y=240:w={targetW-160}:h={targetH-480}:color=black@0.9:t=fill:enable='gte(t,12)',"
+                    f"drawtext=text='FORMULAPADDOCK.IT':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=480:enable='gte(t,12)',"
+                    f"drawtext=text='SEGUI FORMULAPADDOCK.IT SU INSTAGRAM E TIKTOK':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=760:enable='gte(t,12)',"
+                    f"drawbox=x={targetW//2-220}:y=1150:w=440:h=100:color=#e10600@1.0:t=fill:enable='gte(t,12)',"
+                    f"drawtext=text='SEGUI ORA':fontcolor=white:fontsize=40:x=(w-text_w)/2:y=1182:enable='gte(t,12)'"
+                )
+
+                if chosen_audio and os.path.exists(chosen_audio):
+                    cmd = [
+                        'ffmpeg', '-y', '-loop', '1', '-i', input_img, '-i', chosen_audio,
+                        '-t', str(duration), '-vf', vf,
+                        '-c:v', 'libx264', '-c:a', 'aac', '-b:a', '192k',
+                        '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
+                    ]
+                else:
+                    cmd = [
+                        'ffmpeg', '-y', '-loop', '1', '-i', input_img,
+                        '-t', str(duration), '-vf', vf,
+                        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
+                    ]
+
+                subprocess.run(cmd, capture_output=True, check=True)
+
+                with open(output_mp4, 'rb') as f:
+                    mp4_bytes = f.read()
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'video/mp4')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', str(len(mp4_bytes)))
+                self.end_headers()
+                self.wfile.write(mp4_bytes)
+
+            except Exception as e:
+                self.send_json({'error': f"FFmpeg Render Error: {str(e)}"}, 500)
+            finally:
+                if os.path.exists(temp_img):
+                    try: os.remove(temp_img)
+                    except Exception: pass
+                if os.path.exists(output_mp4):
+                    try: os.remove(output_mp4)
+                    except Exception: pass
+            return
+
+        # 2. AUTO-SAVE REEL TO EXPORTS & GOOGLE DRIVE
+        elif self.path.startswith('/api/save-drive'):
             content_length = int(self.headers.get('Content-Length', 0))
             if content_length == 0:
                 self.send_json({'error': 'No file data received'}, 400)
@@ -92,8 +204,7 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
             if not filename:
                 try:
                     mp3_files = []
-                    audio_dir = os.path.join(BASE_DIR, 'assets', 'audio')
-                    search_dirs = [audio_dir, DOWNLOADS_DIR]
+                    search_dirs = [AUDIO_DIR, DOWNLOADS_DIR]
 
                     for s_dir in search_dirs:
                         if os.path.exists(s_dir):
@@ -109,7 +220,7 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 return
             else:
                 safe_name = os.path.basename(filename)
-                target_path = os.path.join(BASE_DIR, 'assets', 'audio', safe_name)
+                target_path = os.path.join(AUDIO_DIR, safe_name)
                 if not os.path.isfile(target_path):
                     target_path = os.path.join(DOWNLOADS_DIR, safe_name)
 
@@ -137,13 +248,12 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({'error': 'Missing url parameter'}, 400)
                 return
 
-            # Clean URL: Try canonical path if date permalink gives 404
             clean_url = target_url
             try:
                 html = None
                 req = urllib.request.Request(
                     clean_url,
-                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                 )
                 
                 try:
@@ -151,11 +261,10 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                         html = response.read().decode('utf-8', errors='ignore')
                 except urllib.error.HTTPError as http_err:
                     if http_err.code == 404 and re.search(r'/\d{4}/\d{2}/\d{2}/', clean_url):
-                        # Strip /YYYY/MM/DD/ date permalink format
                         fallback_url = re.sub(r'/\d{4}/\d{2}/\d{2}/', '/', clean_url)
                         req_fallback = urllib.request.Request(
                             fallback_url,
-                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                         )
                         with urllib.request.urlopen(req_fallback, context=ssl_ctx, timeout=12) as response:
                             html = response.read().decode('utf-8', errors='ignore')
@@ -204,7 +313,6 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json(response_data)
 
             except Exception as e:
-                # Robust fallback for URL errors
                 url_slug = clean_url.rstrip('/').split('/')[-1].replace('-', ' ').title()
                 fallback_title = url_slug if url_slug else "Notizia FormulaPaddock F1"
                 self.send_json({
