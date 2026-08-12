@@ -103,9 +103,8 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 if len(clean_text) > 80:
                     clean_text = clean_text[:80] + "..."
 
-                # FFmpeg filters
-                vf = (
-                    f"scale=8000:-1,"
+                # FFmpeg filt                vf = (
+                    f"scale=2160:-1,"
                     f"zoompan=z='min(zoom+0.0015,1.15)':d={total_frames}:s={targetW}x{targetH}:fps={fps},"
                     f"drawbox=x=40:y=60:w=420:h=80:color=black@0.85:t=fill,"
                     f"drawbox=x=40:y=60:w=420:h=80:color=#e10600@1.0:t=4,"
@@ -131,15 +130,17 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                     cmd = [
                         'ffmpeg', '-y', '-loop', '1', '-i', input_img, '-i', chosen_audio,
                         '-t', str(duration), '-vf', vf,
-                        '-c:v', 'libx264', '-c:a', 'aac', '-b:a', '192k',
+                        '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
+                        '-c:a', 'aac', '-b:a', '192k',
                         '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
                     ]
                 else:
                     cmd = [
                         'ffmpeg', '-y', '-loop', '1', '-i', input_img,
                         '-t', str(duration), '-vf', vf,
-                        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
-                    ]
+                        '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
+                        '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
+                    ]     ]
 
                 subprocess.run(cmd, capture_output=True, check=True)
 
