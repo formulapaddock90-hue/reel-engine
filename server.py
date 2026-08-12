@@ -59,7 +59,7 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
         # 1. RENDER DIRECT REEL MP4 API FOR REMOTE PHP HOST
         if self.path.startswith('/api/render-reel'):
             content_length = int(self.headers.get('Content-Length', 0))
-            body_bytes = self.rfile.read(content_length)
+            body_bytes = self.rfile.read(content_length) if content_length > 0 else b'{}'
             
             try:
                 data = json.loads(body_bytes.decode('utf-8'))
@@ -103,8 +103,9 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 if len(clean_text) > 80:
                     clean_text = clean_text[:80] + "..."
 
-                # FFmpeg filt                vf = (
-                    f"scale=2160:-1,"
+                # FFmpeg filters with guaranteed aspect ratio and fast encoding
+                vf = (
+                    f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
                     f"zoompan=z='min(zoom+0.0015,1.15)':d={total_frames}:s={targetW}x{targetH}:fps={fps},"
                     f"drawbox=x=40:y=60:w=420:h=80:color=black@0.85:t=fill,"
                     f"drawbox=x=40:y=60:w=420:h=80:color=#e10600@1.0:t=4,"
@@ -140,9 +141,19 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                         '-t', str(duration), '-vf', vf,
                         '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
                         '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
-                    ]     ]
+                    ]
 
-                subprocess.run(cmd, capture_output=True, check=True)
+                res = subprocess.run(cmd, capture_output=True, text=True)
+
+                if res.returncode != 0 or not os.path.exists(output_mp4):
+                    # Simple fallback FFmpeg filter without drawtext if font error
+                    simple_vf = f"scale={targetW}:{targetH}:force_original_aspect_ratio=increase,crop={targetW}:{targetH}"
+                    cmd_simple = [
+                        'ffmpeg', '-y', '-loop', '1', '-i', input_img,
+                        '-t', str(duration), '-vf', simple_vf,
+                        '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', output_mp4
+                    ]
+                    subprocess.run(cmd_simple, capture_output=True)
 
                 with open(output_mp4, 'rb') as f:
                     mp4_bytes = f.read()
