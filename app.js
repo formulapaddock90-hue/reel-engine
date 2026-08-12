@@ -1030,7 +1030,8 @@ function startMediaRecorderExport() {
     document.body.removeChild(a);
 
     try {
-      const driveRes = await fetch('/api/save-drive', {
+      const phpDriveEndpoint = 'https://www.formulapaddock.it/seo/social/save_drive.php';
+      const driveRes = await fetch(phpDriveEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'video/webm' },
         body: blob
@@ -1038,13 +1039,16 @@ function startMediaRecorderExport() {
       const driveData = await driveRes.json();
       
       if (driveData.status === 'SUCCESS') {
-        showToast(`☁️ Reel salvato automaticamente su Google Drive (Cartella ${driveData.drive_folder_id})!`);
+        showToast(`☁️ Reel salvato con successo su Google Drive (Cartella creatività ${driveData.drive.folder_id})!`);
         if (dom.recStatusText) {
-          dom.recStatusText.innerHTML = `<i data-lucide="check-circle-2"></i> Salvato su Google Drive (1zDqtrdpLBxC7q_2kB42tZ9f9_eyABz5K)!`;
+          dom.recStatusText.innerHTML = `<i data-lucide="check-circle-2"></i> Salvato su Google Drive! <a href="${driveData.drive.view_link}" target="_blank" style="color:#ffd100;font-weight:bold;">Apri su Drive</a>`;
         }
       }
     } catch (e) {
       console.warn('Drive save info:', e);
+      if (dom.recStatusText) {
+        dom.recStatusText.innerHTML = `<i data-lucide="check-circle-2"></i> Video registrato e scaricato su PC!`;
+      }
     }
 
     if (window.lucide) lucide.createIcons();
