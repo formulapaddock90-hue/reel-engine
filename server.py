@@ -58,6 +58,7 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         # 1. RENDER DIRECT REEL MP4 API FOR REMOTE PHP HOST
         if self.path.startswith('/api/render-reel'):
+            os.makedirs(EXPORTS_DIR, exist_ok=True)
             content_length = int(self.headers.get('Content-Length', 0))
             body_bytes = self.rfile.read(content_length) if content_length > 0 else b'{}'
             
@@ -97,34 +98,42 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 targetH = 1920
                 duration = 15
                 fps = 30
-                total_frames = duration * fps
 
-                clean_text = overlay_text.replace("'", "").replace(":", "-")
+                clean_text = overlay_text.replace("'", "").replace(":", "-").replace("\n", " ")
                 if len(clean_text) > 80:
                     clean_text = clean_text[:80] + "..."
+
+                font_candidates = [
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+                ]
+                font_part = ""
+                for font_cand in font_candidates:
+                    if os.path.exists(font_cand):
+                        font_part = f":fontfile='{font_cand}'"
+                        break
 
                 # FFmpeg filters with guaranteed aspect ratio and fast encoding
                 vf = (
                     f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
-                    f"zoompan=z='min(zoom+0.0015,1.15)':d={total_frames}:s={targetW}x{targetH}:fps={fps},"
                     f"drawbox=x=40:y=60:w=420:h=80:color=black@0.85:t=fill,"
                     f"drawbox=x=40:y=60:w=420:h=80:color=#e10600@1.0:t=4,"
-                    f"drawtext=text='FORMULAPADDOCK.IT':fontcolor=white:fontsize=32:x=60:y=85,"
+                    f"drawtext=text='FORMULAPADDOCK.IT'{font_part}:fontcolor=white:fontsize=32:x=60:y=85,"
                     f"drawbox=x={targetW-360}:y=60:w=320:h=160:color=black@0.85:t=fill,"
                     f"drawbox=x={targetW-360}:y=60:w=320:h=160:color=white@0.2:t=3,"
-                    f"drawtext=text='334 KM/H':fontcolor=#ffeb3b:fontsize=48:x={targetW-330}:y=90,"
-                    f"drawtext=text='DRS ATTIVO':fontcolor=#00e676:fontsize=22:x={targetW-330}:y=160,"
+                    f"drawtext=text='334 KM/H'{font_part}:fontcolor=#ffeb3b:fontsize=48:x={targetW-330}:y=90,"
+                    f"drawtext=text='DRS ATTIVO'{font_part}:fontcolor=#00e676:fontsize=22:x={targetW-330}:y=160,"
                     f"drawbox=x=60:y={targetH-360}:w={targetW-120}:h=240:color=black@0.9:t=fill:enable='lt(t,12)',"
                     f"drawbox=x=60:y={targetH-360}:w=16:h=240:color=#e10600@1.0:t=fill:enable='lt(t,12)',"
-                    f"drawtext=text='FORMULAPADDOCK.IT • REEL F1':fontcolor=#ffeb3b:fontsize=26:x=100:y={targetH-320}:enable='lt(t,12)',"
-                    f"drawtext=text='{clean_text}':fontcolor=white:fontsize=44:x=100:y={targetH-260}:enable='lt(t,12)',"
+                    f"drawtext=text='FORMULAPADDOCK.IT • REEL F1'{font_part}:fontcolor=#ffeb3b:fontsize=26:x=100:y={targetH-320}:enable='lt(t,12)',"
+                    f"drawtext=text='{clean_text}'{font_part}:fontcolor=white:fontsize=44:x=100:y={targetH-260}:enable='lt(t,12)',"
                     f"drawbox=x=0:y=0:w={targetW}:h={targetH}:color=#08090d@0.98:t=fill:enable='gte(t,12)',"
                     f"drawbox=x=40:y=40:w={targetW-80}:h={targetH-80}:color=#e10600@1.0:t=4:enable='gte(t,12)',"
                     f"drawbox=x=80:y=240:w={targetW-160}:h={targetH-480}:color=black@0.9:t=fill:enable='gte(t,12)',"
-                    f"drawtext=text='FORMULAPADDOCK.IT':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=480:enable='gte(t,12)',"
-                    f"drawtext=text='SEGUI FORMULAPADDOCK.IT SU INSTAGRAM E TIKTOK':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=760:enable='gte(t,12)',"
+                    f"drawtext=text='FORMULAPADDOCK.IT'{font_part}:fontcolor=white:fontsize=64:x=(w-text_w)/2:y=480:enable='gte(t,12)',"
+                    f"drawtext=text='SEGUI FORMULAPADDOCK.IT SU INSTAGRAM E TIKTOK'{font_part}:fontcolor=white:fontsize=36:x=(w-text_w)/2:y=760:enable='gte(t,12)',"
                     f"drawbox=x={targetW//2-220}:y=1150:w=440:h=100:color=#e10600@1.0:t=fill:enable='gte(t,12)',"
-                    f"drawtext=text='SEGUI ORA':fontcolor=white:fontsize=40:x=(w-text_w)/2:y=1182:enable='gte(t,12)'"
+                    f"drawtext=text='SEGUI ORA'{font_part}:fontcolor=white:fontsize=40:x=(w-text_w)/2:y=1182:enable='gte(t,12)'"
                 )
 
                 if chosen_audio and os.path.exists(chosen_audio):

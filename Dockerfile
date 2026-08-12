@@ -1,9 +1,11 @@
 # Official Python slim image
 FROM python:3.11-slim
 
-# Install FFmpeg and system dependencies
+# Install FFmpeg, fonts, and system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    fonts-dejavu \
+    fonts-liberation \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
