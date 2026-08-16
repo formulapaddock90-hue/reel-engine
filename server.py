@@ -452,9 +452,8 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
             pass
 
 if __name__ == '__main__':
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.TCPServer.allow_reuse_address = True
     os.chdir(BASE_DIR)
-    with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), ReelProxyHandler) as httpd:
-        httpd.daemon_threads = True
+    with socketserver.TCPServer(("0.0.0.0", PORT), ReelProxyHandler) as httpd:
         print(f"ReelAI Cloud Server active on port {PORT}")
         httpd.serve_forever()
