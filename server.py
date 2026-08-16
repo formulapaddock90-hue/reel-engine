@@ -54,7 +54,7 @@ def download_image(url, path):
     if not url: return False
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, context=ssl_ctx, timeout=5) as resp, open(path, 'wb') as f:
+        with urllib.request.urlopen(req, context=ssl_ctx, timeout=12) as resp, open(path, 'wb') as f:
             f.write(resp.read())
         return os.path.getsize(path) > 1000
     except Exception:
@@ -64,11 +64,11 @@ def article_images(url):
     if not url: return []
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, context=ssl_ctx, timeout=6) as resp:
+        with urllib.request.urlopen(req, context=ssl_ctx, timeout=12) as resp:
             page = resp.read().decode('utf-8', errors='ignore')
         found = re.findall(r'<meta[^>]+(?:property=["\']og:image["\'][^>]+content|content)=["\']([^"\']+)', page, re.I)
         found += re.findall(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)', page, re.I)
-        return list(dict.fromkeys(urllib.parse.urljoin(url, x) for x in found if 'upload' in x or x.startswith('http')))[:4]
+        return list(dict.fromkeys(urllib.parse.urljoin(url, x) for x in found if 'upload' in x or x.startswith('http')))[:8]
     except Exception:
         return []
 
@@ -179,11 +179,11 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
 
                 if chosen_audio and os.path.exists(chosen_audio):
                     cmd = [
-                        'ffmpeg', '-y', '-framerate', '15', '-loop', '1', '-i', scene_images[0], '-framerate', '15', '-loop', '1', '-i', scene_images[1], '-framerate', '15', '-loop', '1', '-i', scene_images[2], '-stream_loop', '-1', '-i', chosen_audio,
+                        'ffmpeg', '-y', '-loop', '1', '-i', scene_images[0], '-loop', '1', '-i', scene_images[1], '-loop', '1', '-i', scene_images[2], '-stream_loop', '-1', '-i', chosen_audio,
                         '-filter_complex', vf, '-map', '[v]', '-map', '3:a', '-t', str(duration),
                         '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
                         '-c:a', 'aac', '-b:a', '128k', '-af', 'volume=0.38',
-                        '-pix_fmt', 'yuv420p', '-r', '20', '-shortest', '-movflags', '+faststart', output_mp4
+                        '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
                     ]
                 else:
                     cmd = [
