@@ -15,6 +15,7 @@ import time
 import ssl
 import subprocess
 import random
+import html
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -33,6 +34,43 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 ssl_ctx = ssl.create_default_context()
 ssl_ctx.check_hostname = False
 ssl_ctx.verify_mode = ssl.CERT_NONE
+
+def wrap_reel_text(value, width=28, max_lines=4):
+    words = re.sub(r'\s+', ' ', html.unescape(str(value or ''))).strip().upper().split(' ')
+    lines, line = [], ''
+    for word in words:
+        test = (line + ' ' + word).strip()
+        if len(test) > width and line:
+            lines.append(line); line = word
+        else:
+            line = test
+    if line: lines.append(line)
+    lines = lines[:max_lines]
+    if len(lines) == max_lines and len(words) > len(' '.join(lines).split()):
+        lines[-1] = lines[-1].rstrip('. ') + '…'
+    return '\n'.join(lines)
+
+def download_image(url, path):
+    if not url: return False
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ssl_ctx, timeout=12) as resp, open(path, 'wb') as f:
+            f.write(resp.read())
+        return os.path.getsize(path) > 1000
+    except Exception:
+        return False
+
+def article_images(url):
+    if not url: return []
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ssl_ctx, timeout=12) as resp:
+            page = resp.read().decode('utf-8', errors='ignore')
+        found = re.findall(r'<meta[^>]+(?:property=["\']og:image["\'][^>]+content|content)=["\']([^"\']+)', page, re.I)
+        found += re.findall(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)', page, re.I)
+        return list(dict.fromkeys(urllib.parse.urljoin(url, x) for x in found if 'upload' in x or x.startswith('http')))[:8]
+    except Exception:
+        return []
 
 class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
 
@@ -69,12 +107,23 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
 
             overlay_text = data.get('text', 'FORMULAPADDOCK.IT • REEL F1')
             img_url = data.get('image_url', '')
+            story_points = data.get('story_points') or []
+            article_url = data.get('article_url', '')
+            reel_mode = str(data.get('mode', 'news')).upper()
 
             # Download or use local image
             temp_img = os.path.join(EXPORTS_DIR, f"temp_{int(time.time())}.jpg")
             default_img = os.path.join(BASE_DIR, 'assets', 'images', 'tech.jpg')
 
-            if img_url:
+            candidates = article_images(article_url) + ([img_url] if img_url else [])
+            scene_images = []
+            for idx, candidate in enumerate(candidates):
+                candidate_path = os.path.join(EXPORTS_DIR, f"scene_{int(time.time())}_{idx}.jpg")
+                if download_image(candidate, candidate_path):
+                    scene_images.append(candidate_path)
+                if len(scene_images) == 3: break
+
+            if img_url and not scene_images:
                 try:
                     req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
                     with urllib.request.urlopen(req, context=ssl_ctx, timeout=10) as resp:
@@ -85,6 +134,8 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                     input_img = default_img
             else:
                 input_img = default_img
+            if not scene_images: scene_images = [input_img]
+            while len(scene_images) < 3: scene_images.append(scene_images[-1])
 
             # Pick Random MP3 Track
             audio_files = [os.path.join(AUDIO_DIR, f) for f in os.listdir(AUDIO_DIR) if f.lower().endswith('.mp3')]
@@ -99,9 +150,10 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 duration = 15
                 fps = 30
 
-                clean_text = overlay_text.replace("'", "").replace(":", "-").replace("\n", " ")
-                if len(clean_text) > 80:
-                    clean_text = clean_text[:80] + "..."
+                points = []
+                for i in range(3):
+                    p = story_points[i] if i < len(story_points) and isinstance(story_points[i], dict) else {}
+                    points.append((p.get('label') or ['IL FATTO','PERCHÉ CONTA','COSA SEGUE'][i], p.get('text') or overlay_text))
 
                 font_candidates = [
                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
@@ -113,35 +165,24 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                         font_part = f":fontfile='{font_cand}'"
                         break
 
-                # FFmpeg filters optimized for low memory (<150MB RAM)
-                vf = (
-                    f"scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,"
-                    f"drawbox=x=30:y=40:w=300:h=60:color=black@0.85:t=fill,"
-                    f"drawbox=x=30:y=40:w=300:h=60:color=#e10600@1.0:t=3,"
-                    f"drawtext=text='FORMULAPADDOCK.IT'{font_part}:fontcolor=white:fontsize=22:x=45:y=58,"
-                    f"drawbox=x={targetW-240}:y=40:w=210:h=110:color=black@0.85:t=fill,"
-                    f"drawbox=x={targetW-240}:y=40:w=210:h=110:color=white@0.2:t=2,"
-                    f"drawtext=text='334 KM/H'{font_part}:fontcolor=#ffeb3b:fontsize=32:x={targetW-220}:y=60,"
-                    f"drawtext=text='DRS ATTIVO'{font_part}:fontcolor=#00e676:fontsize=16:x={targetW-220}:y=110,"
-                    f"drawbox=x=40:y={targetH-240}:w={targetW-80}:h=160:color=black@0.9:t=fill:enable='lt(t,12)',"
-                    f"drawbox=x=40:y={targetH-240}:w=10:h=160:color=#e10600@1.0:t=fill:enable='lt(t,12)',"
-                    f"drawtext=text='FORMULAPADDOCK.IT • REEL F1'{font_part}:fontcolor=#ffeb3b:fontsize=18:x=65:y={targetH-215}:enable='lt(t,12)',"
-                    f"drawtext=text='{clean_text}'{font_part}:fontcolor=white:fontsize=28:x=65:y={targetH-175}:enable='lt(t,12)',"
-                    f"drawbox=x=0:y=0:w={targetW}:h={targetH}:color=#08090d@0.98:t=fill:enable='gte(t,12)',"
-                    f"drawbox=x=30:y=30:w={targetW-60}:h={targetH-60}:color=#e10600@1.0:t=3:enable='gte(t,12)',"
-                    f"drawbox=x=50:y=160:w={targetW-100}:h={targetH-320}:color=black@0.9:t=fill:enable='gte(t,12)',"
-                    f"drawtext=text='FORMULAPADDOCK.IT'{font_part}:fontcolor=white:fontsize=42:x=(w-text_w)/2:y=320:enable='gte(t,12)',"
-                    f"drawtext=text='SEGUI FORMULAPADDOCK.IT SU INSTAGRAM E TIKTOK'{font_part}:fontcolor=white:fontsize=24:x=(w-text_w)/2:y=520:enable='gte(t,12)',"
-                    f"drawbox=x={targetW//2-150}:y=780:w=300:h=70:color=#e10600@1.0:t=fill:enable='gte(t,12)',"
-                    f"drawtext=text='SEGUI ORA'{font_part}:fontcolor=white:fontsize=28:x=(w-text_w)/2:y=800:enable='gte(t,12)'"
-                )
+                text_files = []
+                for i, (_, txt) in enumerate(points):
+                    pth = os.path.join(EXPORTS_DIR, f"point_{int(time.time())}_{i}.txt")
+                    with open(pth, 'w', encoding='utf-8') as f: f.write(wrap_reel_text(txt))
+                    text_files.append(pth.replace('\\','/').replace(':','\\:'))
+                filters = []
+                for i, (label, _) in enumerate(points):
+                    filters.append(f"[{i}:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,drawbox=x=0:y=0:w=iw:h=ih:color=black@0.38:t=fill,drawbox=x=0:y=0:w=14:h=ih:color=#e10600:t=fill,drawtext=text='FORMULAPADDOCK.IT  •  {reel_mode}'{font_part}:fontcolor=#ffd100:fontsize=20:x=42:y=54,drawtext=text='{label}'{font_part}:fontcolor=#ffd100:fontsize=25:x=54:y=720,drawbox=x=38:y=760:w=644:h=360:color=black@0.82:t=fill,drawtext=textfile='{text_files[i]}'{font_part}:fontcolor=white:fontsize=37:line_spacing=14:x=58:y=805,trim=duration=4,setpts=PTS-STARTPTS[s{i}]")
+                filters.append("color=c=#08090d:s=720x1280:d=3,drawbox=x=28:y=28:w=664:h=1224:color=#e10600:t=4,drawtext=text='FORMULAPADDOCK.IT'"+font_part+":fontcolor=white:fontsize=48:x=(w-text_w)/2:y=390,drawtext=text='SEGUICI'"+font_part+":fontcolor=#ffd100:fontsize=62:x=(w-text_w)/2:y=570,drawtext=text='E CLICCA MI PIACE'"+font_part+":fontcolor=white:fontsize=32:x=(w-text_w)/2:y=660,drawtext=text='🏁'"+font_part+":fontcolor=white:fontsize=70:x=(w-text_w)/2:y=790[outro]")
+                filters.append("[s0][s1][s2][outro]concat=n=4:v=1:a=0[v]")
+                vf = ';'.join(filters)
 
                 if chosen_audio and os.path.exists(chosen_audio):
                     cmd = [
-                        'ffmpeg', '-y', '-loop', '1', '-i', input_img, '-i', chosen_audio,
-                        '-t', str(duration), '-vf', vf,
+                        'ffmpeg', '-y', '-loop', '1', '-i', scene_images[0], '-loop', '1', '-i', scene_images[1], '-loop', '1', '-i', scene_images[2], '-stream_loop', '-1', '-i', chosen_audio,
+                        '-filter_complex', vf, '-map', '[v]', '-map', '3:a', '-t', str(duration),
                         '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
-                        '-c:a', 'aac', '-b:a', '128k',
+                        '-c:a', 'aac', '-b:a', '128k', '-af', 'volume=0.38',
                         '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
                     ]
                 else:
