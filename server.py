@@ -35,7 +35,7 @@ ssl_ctx = ssl.create_default_context()
 ssl_ctx.check_hostname = False
 ssl_ctx.verify_mode = ssl.CERT_NONE
 
-def wrap_reel_text(value, width=27, max_lines=3):
+def wrap_reel_text(value, width=28, max_lines=4):
     words = re.sub(r'\s+', ' ', html.unescape(str(value or ''))).strip().upper().split(' ')
     lines, line = [], ''
     for word in words:
@@ -121,7 +121,7 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                 candidate_path = os.path.join(EXPORTS_DIR, f"scene_{int(time.time())}_{idx}.jpg")
                 if download_image(candidate, candidate_path):
                     scene_images.append(candidate_path)
-                if len(scene_images) == 1: break
+                if len(scene_images) == 3: break
 
             if img_url and not scene_images:
                 try:
