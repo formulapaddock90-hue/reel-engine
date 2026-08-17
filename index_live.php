@@ -388,8 +388,8 @@ if (($_GET['auto_pubblish'] ?? $_GET['auto_publish'] ?? '') === 'off') {
             </div>
 
             <div class="cloud-link-bar">
-                <span>🎬 Reel Engine Cloud 24/7 collegato</span>
-                <a href="https://reel-engine-dcnr.onrender.com" target="_blank">Apri Reel Engine &rarr;</a>
+                <span>🎬 Reel Engine 9:16 FormulaPaddock Nativo</span>
+                <a href="reel.php" target="_blank">Apri Reel Engine &rarr;</a>
                 <a href="reel_jobs.php" style="margin-left:10px;background:rgba(255,209,0,0.15);color:#ffd100;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-decoration:none;">📊 Job Reel Monitor</a>
             </div>
 

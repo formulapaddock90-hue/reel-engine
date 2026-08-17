@@ -13,8 +13,8 @@ $bufferToken = is_file($bufferTokenFile) ? trim((string) file_get_contents($buff
 
 return [
 
-    // ===================== REEL CLOUD ENGINE URL =====================
-    'reel_cloud_url' => 'https://reel-engine-dcnr.onrender.com',
+    // ===================== REEL NATIVE ENGINE URL =====================
+    'reel_cloud_url' => 'https://www.formulapaddock.it/seo/social/reel.php',
 
     // ===================== CHROME EXTENSION FACEBOOK GROUPS API =====================
     'fb_extension_token' => $seoConfig['fb_extension_token'] ?? getenv('FB_EXTENSION_TOKEN') ?: 'f1_paddock_ext_sec_99a8b7c6d5e4',

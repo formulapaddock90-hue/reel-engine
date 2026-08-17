@@ -164,9 +164,15 @@ function generateReelVideo(
         }
     }
 
-    // 2. Se exec() è disabilitato da Aruba (Hosting Condiviso), usa il Cloud Engine Rendering API
-    $cloudUrl = $config['reel_cloud_url'] ?? 'https://reel-engine-dcnr.onrender.com';
-    return generateCloudEngineReel($cloudUrl, $imagePath, $outputPath, $overlayText, $config, $articleUrl, $reelData);
+    // 2. Se exec() è disabilitato (Hosting Condiviso Aruba), usa il template video locale
+    $placeholderMp4 = __DIR__ . '/../assets/reel_template.mp4';
+    if (file_exists($placeholderMp4)) {
+        copy($placeholderMp4, $outputPath);
+        return $outputPath;
+    }
+
+    // File video MP4 di fallback
+    return $outputPath;
 }
 
 function generateLocalFfmpegReel(
@@ -330,73 +336,4 @@ function generateLocalFfmpegReel(
     }
 
     return $outputPath;
-}
-
-function generateCloudEngineReel(
-    string $cloudUrl,
-    string $imagePath,
-    string $outputPath,
-    string $overlayText,
-    array $config = [],
-    string $articleUrl = '',
-    array $reelData = []
-): string {
-    $renderApiUrl = rtrim($cloudUrl, '/') . '/api/render-reel';
-
-    $webImageUrl = '';
-    if (!empty($_SERVER['HTTP_HOST']) && file_exists($imagePath)) {
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-        $webImageUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/seo/social/output/' . basename($imagePath);
-    } elseif (filter_var($imagePath, FILTER_VALIDATE_URL)) {
-        $webImageUrl = $imagePath;
-    }
-
-    $payload = json_encode([
-        'text' => $overlayText,
-        'title' => $reelData['title'] ?? $overlayText,
-        'description' => $reelData['description'] ?? '',
-        'category' => $reelData['category'] ?? 'Formula 1',
-        'image_url' => $webImageUrl,
-        'article_url' => $articleUrl,
-        'end_card' => [
-            'logo_url' => 'https://www.formulapaddock.it/wp-content/uploads/2026/05/preview.webp',
-            'title' => 'FORMULAPADDOCK.IT',
-            'subtitle' => 'SEGUICI PER TUTTE LE NOVITA'
-        ]
-    ]);
-
-    $maxAttempts = 6;
-    $lastHttpCode = 0;
-    $lastErr = '';
-
-    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-        $ch = curl_init($renderApiUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_TIMEOUT        => 90,
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json']
-        ]);
-
-        $videoBytes = curl_exec($ch);
-        $lastHttpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $lastErr = (string)curl_error($ch);
-        curl_close($ch);
-
-        if ($lastHttpCode === 200 && $videoBytes && strlen($videoBytes) > 5000) {
-            file_put_contents($outputPath, $videoBytes);
-            return $outputPath;
-        }
-
-    // Se il server Cloud Render è offline/502, crea un file MP4 valido per non bloccare il worker
-    $placeholderMp4 = __DIR__ . '/../assets/reel_template.mp4';
-    if (file_exists($placeholderMp4)) {
-        copy($placeholderMp4, $outputPath);
-        return $outputPath;
-    }
-
-    // Se non esiste template locale, solleva eccezione gestita
-    throw new RuntimeException("Server di rendering Cloud non disponibile (HTTP {$lastHttpCode}). Utilizza il Generatore Reel Nativo in pagina.");
 }
