@@ -189,10 +189,11 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                         # Concat to 15 seconds
                         looped_mp4 = os.path.join(EXPORTS_DIR, f"veo_looped_{int(time.time())}.mp4")
                         concat_txt = os.path.join(EXPORTS_DIR, f"concat_{int(time.time())}.txt")
+                        clip_path_clean = clip_5s.replace('\\', '/')
                         with open(concat_txt, "w", encoding="utf-8") as f:
-                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
-                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
-                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
+                            f.write(f"file '{clip_path_clean}'\n")
+                            f.write(f"file '{clip_path_clean}'\n")
+                            f.write(f"file '{clip_path_clean}'\n")
                             
                         cmd_loop = ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', concat_txt, '-c', 'copy', looped_mp4]
                         subprocess.run(cmd_loop, capture_output=True)
