@@ -83,11 +83,11 @@ if (!empty($targetUrl)) {
     shuffle($categoryImages);
     $extraImages = array_slice($categoryImages, 0, 2);
 
-    // 3. AI Copywriting con Gemini per 3 Frasi BOOM virali
+    // 3. AI Copywriting con Gemini per 3 Frasi distinte (1 per ogni immagine)
     $geminiKey = $seoConfig['gemini_api_key'] ?? '';
-    $boom1 = '🔴 ' . mb_strtoupper($categoryName !== 'Formula 1' ? $categoryName : 'CADILLAC F1');
+    $boom1 = '🔴 ' . mb_strtoupper($categoryName !== 'Formula 1' ? $categoryName : 'CADILLAC F1') . ' — BREAKING NEWS';
     $boom2 = mb_strtoupper($title);
-    $boom3 = 'SCOPRI TUTTI I DETTAGLI SU FORMULAPADDOCK';
+    $boom3 = 'SCOPRI TUTTI I RETROSCENA SU FORMULAPADDOCK.IT';
 
     if (!empty($geminiKey) && $title !== 'Formula Paddock News') {
         $prompt = "Sei un copywriter esperto di Formula 1 per Reel virali TikTok e Instagram.
@@ -95,10 +95,10 @@ Dato questo articolo di Formula 1:
 TITOLO: \"{$title}\"
 ESTRATTO: \"{$description}\"
 
-Genera ESATTAMENTE un JSON con 3 frasi brevi, maiuscole e di fortissimo impatto (stile banner TV Sky F1):
-- \"boom1\": Gancio con emoji (max 3-4 parole, es. \"🔴 CADILLAC F1 UFFICIALE\", \"⚡ SVOLTA TEAM PRINCIPAL\", \"🔥 NOVITA NEL PADDOCK\")
-- \"boom2\": Notizia chiave esplosiva (max 4-6 parole, es. \"BUDKOWSKI NUOVO TEAM PRINCIPAL\", \"ACCORDO STORICO IN F1\")
-- \"boom3\": Call to action o dettaglio intrigante (max 5-6 parole, es. \"I RETROSCENA DEL PROGETTO!\", \"LEGGI TUTTO SU FORMULAPADDOCK\")
+Genera ESATTAMENTE un JSON con 3 frasi distinte, una per ciascuna delle 3 immagini che si susseguono nel video:
+- \"boom1\": Testo per la 1ª IMMAGINE (Gancio con emoji, max 4-6 parole, es. \"🔴 CLAMOROSO CADILLAC F1: ARRIVA LA SVOLTA!\")
+- \"boom2\": Testo per la 2ª IMMAGINE (Notizia chiave esplosiva, max 5-7 parole, es. \"MARCIN BUDKOWSKI È IL NUOVO TEAM PRINCIPAL!\")
+- \"boom3\": Testo per la 3ª IMMAGINE (Dettaglio o Call-to-Action, max 5-7 parole, es. \"LEGGI TUTTI I RETROSCENA SU FORMULAPADDOCK.IT\")
 
 Rispondi SOLO con il JSON senza markdown o altro testo.";
 
@@ -363,20 +363,20 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
         </div>
       </div>
 
-      <!-- 3 BOX AFFIANCATI -->
-      <label>2. 3 Scritte BOOM nel Video (Modificabili a piacimento)</label>
+      <!-- 3 BOX AFFIANCATI (1 PER OGNI FOTO) -->
+      <label>2. 3 Testi nel Video (1 Scritta per ciascuna delle 3 Foto)</label>
       <div class="boxes-grid">
         <div class="box-col">
-          <div class="box-label red">🟥 Box 1 (Gancio)</div>
-          <input type="text" id="b1Input" value="🔴 CADILLAC F1">
+          <div class="box-label red">🟥 Foto 1: Gancio Iniziale</div>
+          <input type="text" id="b1Input" value="🔴 CADILLAC F1: SVOLTA STORICA">
         </div>
         <div class="box-col">
-          <div class="box-label dark">⬛ Box 2 (Notizia)</div>
+          <div class="box-label dark">⬛ Foto 2: Notizia Principale</div>
           <input type="text" id="b2Input" value="MARCIN BUDKOWSKI AL COMANDO">
         </div>
         <div class="box-col">
-          <div class="box-label yellow">🟨 Box 3 (Dettaglio)</div>
-          <input type="text" id="b3Input" value="SCOPRI TUTTI I DETTAGLI">
+          <div class="box-label yellow">🟨 Foto 3: Dettaglio / Call-To-Action</div>
+          <input type="text" id="b3Input" value="TUTTI I RETROSCENA SU FORMULAPADDOCK.IT">
         </div>
       </div>
 
@@ -586,7 +586,7 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
         const W = 1080;
         const H = 1920;
         const FPS = 30;
-        const DURATION = 6.0;
+        const DURATION = 6.8;
         const totalFrames = Math.round(DURATION * FPS);
 
         const canvasStream = canvas.captureStream(FPS);
@@ -597,8 +597,8 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
           const audioDest = audioCtx.createMediaStreamDestination();
           const gainNode = audioCtx.createGain();
           gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
-          gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime + 5.0);
-          gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 6.0);
+          gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime + 5.8);
+          gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 6.8);
 
           audioSource = audioCtx.createBufferSource();
           audioSource.buffer = audioBuffer;
@@ -638,13 +638,21 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
           const t = frame / FPS;
 
           let currentImg = loadedImgs[0];
-          let imgProgress = t / 2.0;
-          if (t >= 2.0 && t < 4.0) {
+          let imgProgress = t / 1.9;
+          let sceneIndex = 1; // 1, 2, o 3
+
+          if (t >= 1.9 && t < 3.8) {
             currentImg = loadedImgs[1];
-            imgProgress = (t - 2.0) / 2.0;
-          } else if (t >= 4.0) {
+            imgProgress = (t - 1.9) / 1.9;
+            sceneIndex = 2;
+          } else if (t >= 3.8 && t < 5.4) {
             currentImg = loadedImgs[2];
-            imgProgress = (t - 4.0) / 2.0;
+            imgProgress = (t - 3.8) / 1.6;
+            sceneIndex = 3;
+          } else if (t >= 5.4) {
+            currentImg = loadedImgs[2];
+            imgProgress = (t - 5.4) / 1.4;
+            sceneIndex = 4;
           }
 
           ctx.save();
@@ -665,9 +673,9 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
             baseH = W / imgRatio;
           }
 
-          const scale = 1.08 + Math.sin(imgProgress * Math.PI) * 0.04;
-          const panX = Math.sin(imgProgress * Math.PI) * 25;
-          const panY = Math.cos(imgProgress * Math.PI) * 12;
+          const scale = 1.08 + Math.sin(imgProgress * Math.PI) * 0.05;
+          const panX = Math.sin(imgProgress * Math.PI) * 28;
+          const panY = Math.cos(imgProgress * Math.PI) * 14;
 
           const drawW = baseW * scale;
           const drawH = baseH * scale;
@@ -675,14 +683,17 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
           const drawY = (H - drawH) / 2 + panY;
 
           let alpha = 1.0;
-          if (t < 0.35) alpha = t / 0.35;
+          if (t < 0.25) alpha = t / 0.25;
+          else if (t >= 1.9 && t < 2.1) alpha = 0.6 + (t - 1.9) / 0.2 * 0.4;
+          else if (t >= 3.8 && t < 4.0) alpha = 0.6 + (t - 3.8) / 0.2 * 0.4;
           ctx.globalAlpha = alpha;
 
           ctx.drawImage(currentImg, drawX, drawY, drawW, drawH);
           ctx.restore();
 
-          // ─── 3 SCRITTE BOOM BANNER F1 TV (0.0s - 4.6s) ───
-          if (t < 4.6) {
+          // ─── RENDERING DINAMICO: 1 TESTO DIVERSO PER OGNI FOTO (0.0s - 5.4s) ───
+          if (sceneIndex <= 3) {
+            // Header Top TV Badge
             ctx.save();
             ctx.fillStyle = '#E8002D';
             ctx.beginPath();
@@ -694,65 +705,66 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
             ctx.fillText('FORMULA PADDOCK', 85, 107);
             ctx.restore();
 
+            // Sfumatura nera inferiore per leggibilità
             ctx.save();
-            const grad = ctx.createLinearGradient(0, 950, 0, H);
+            const grad = ctx.createLinearGradient(0, 1000, 0, H);
             grad.addColorStop(0, 'rgba(0,0,0,0)');
-            grad.addColorStop(0.25, 'rgba(0,0,0,0.80)');
+            grad.addColorStop(0.3, 'rgba(0,0,0,0.85)');
             grad.addColorStop(1, 'rgba(0,0,0,0.98)');
             ctx.fillStyle = grad;
-            ctx.fillRect(0, 950, W, 970);
+            ctx.fillRect(0, 1000, W, 920);
 
-            let curY = 1080;
+            const curY = 1200;
 
-            // 🟥 BANNER 1: Gancio Rosso (Outfit 40px)
-            const h1 = drawWrappedBanner(
-              ctx,
-              60,
-              curY,
-              banner1,
-              40,
-              '"Outfit", sans-serif',
-              '#E8002D',
-              '#FFFFFF',
-              960,
-              26,
-              16,
-              8
-            );
-            curY += h1 + 14;
-
-            // ⬛ BANNER 2: Notizia Chiave Nera Gigante (Outfit 58px)
-            const h2 = drawWrappedBanner(
-              ctx,
-              60,
-              curY,
-              banner2,
-              58,
-              '"Outfit", sans-serif',
-              'rgba(12, 14, 20, 0.96)',
-              '#FFFFFF',
-              960,
-              28,
-              20,
-              10
-            );
-            curY += h2 + 14;
-
-            // 🟨 BANNER 3: Dettaglio Giallo Racing (Inter 40px)
-            drawWrappedBanner(
-              ctx,
-              60,
-              curY,
-              banner3,
-              40,
-              '"Inter", sans-serif',
-              '#FFD700',
-              '#000000',
-              960,
-              26,
-              16,
-              8
-            );
+            if (sceneIndex === 1) {
+              // 🟥 SCENA 1 / FOTO 1: TESTO 1 (GANCIO ROSSO CORSA)
+              drawWrappedBanner(
+                ctx,
+                60,
+                curY,
+                banner1,
+                52,
+                '"Outfit", sans-serif',
+                '#E8002D',
+                '#FFFFFF',
+                960,
+                30,
+                22,
+                10
+              );
+            } else if (sceneIndex === 2) {
+              // ⬛ SCENA 2 / FOTO 2: TESTO 2 (NOTIZIA CHIAVE NERA CARBONIO GIGANTE)
+              drawWrappedBanner(
+                ctx,
+                60,
+                curY,
+                banner2,
+                54,
+                '"Outfit", sans-serif',
+                'rgba(12, 14, 20, 0.96)',
+                '#FFFFFF',
+                960,
+                32,
+                24,
+                12
+              );
+            } else if (sceneIndex === 3) {
+              // 🟨 SCENA 3 / FOTO 3: TESTO 3 (DETTAGLIO GIALLO RACING)
+              drawWrappedBanner(
+                ctx,
+                60,
+                curY,
+                banner3,
+                48,
+                '"Inter", sans-serif',
+                '#FFD700',
+                '#000000',
+                960,
+                30,
+                22,
+                10
+              );
+            }
 
             ctx.fillStyle = '#FFFFFF';
             ctx.font = '800 26px "Inter", sans-serif';
@@ -760,10 +772,10 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
             ctx.restore();
           }
 
-          // ─── OUTRO CON LOGO CENTRATO (4.6s - 6.0s) ───
-          if (t >= 4.6) {
+          // ─── OUTRO CON LOGO CENTRATO (5.4s - 6.8s) ───
+          if (t >= 5.4) {
             ctx.save();
-            const outroAlpha = Math.min(1.0, (t - 4.6) / 0.3);
+            const outroAlpha = Math.min(1.0, (t - 5.4) / 0.3);
             ctx.fillStyle = `rgba(0, 0, 0, ${0.92 * outroAlpha})`;
             ctx.fillRect(0, 0, W, H);
 
