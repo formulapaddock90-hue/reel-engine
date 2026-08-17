@@ -1,0 +1,12 @@
+crea un file web che dato un link generico generi un reel  da 5 /6 secondi con musica casuali, il video deve essere scaricabile 
+input link
+il reel deve essere verticale 9:16, elegante
+il reel deve essere generato con ffmpeg e mp4
+il template deve contenere 2/3 transizioni fluide
+la musica deve essere casuale da una cartella di musica
+l'argomento è f1
+crea un tema elegante e minimale con i colori della f1
+il logo da usare è https://www.formulapaddock.it/wp-content/uploads/2026/05/preview.webp
+alla fine del video deve apparire il logo 
+il formato del video è 9:16
+crea file bat per l'esecuzione

@@ -1,7 +1,6 @@
-# Official Python slim image
-FROM python:3.11-slim
+FROM node:20-slim
 
-# Install FFmpeg, fonts, and system dependencies
+# Install FFmpeg and font packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     fonts-dejavu \
@@ -9,20 +8,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Install Python requirements
-RUN pip install --no-cache-dir google-genai
+# Copy package descriptors and install dependencies
+COPY package*.json ./
+RUN npm install --production
 
-# Copy application files
-COPY . /app
+# Copy application files, assets, music and fonts
+COPY . .
 
-# Create exports folder
-RUN mkdir -p exports assets/audio
+# Ensure working directories
+RUN mkdir -p music output temp public
 
-# Expose dynamic port
-EXPOSE 5173
+ENV PORT=3000
+EXPOSE 3000
 
-# Start Python Reel Server
-CMD ["python", "server.py"]
+CMD ["node", "server.js"]

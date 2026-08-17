@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Reel Generator — FormulaPaddock</title>
+  <meta name="description" content="Genera reel verticali F1 da 5–6 secondi partendo da un link. Video scaricabile in MP4." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --red: #E8002D;
+      --red-dark: #b5001e;
+      --red-glow: rgba(232,0,45,0.35);
+      --gold: #C8A45A;
+      --gold-light: #e8c47a;
+      --black: #0D0D0D;
+      --black2: #111111;
+      --black3: #181818;
+      --surface: #1a1a1a;
+      --surface2: #222222;
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(232,0,45,0.4);
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #555;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND NOISE + GRID ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(232,0,45,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 100%, rgba(200,164,90,0.06) 0%, transparent 60%),
+        linear-gradient(180deg, var(--black) 0%, #0a0a0a 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Griglia sottile di sfondo */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYOUT ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 36px 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .brand-text h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+
+    .brand-text span {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      background: var(--red);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 72px 0 56px;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 24px;
+      opacity: 0.85;
+    }
+
+    .hero h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, #ccc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero h2 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--red) 0%, #ff4466 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── CARD PRINCIPALE ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .card:hover::before,
+    .card.active::before { opacity: 1; }
+
+    /* ── INPUT URL ── */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .input-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 18px;
+      color: var(--text-dim);
+      font-size: 18px;
+      pointer-events: none;
+      transition: color 0.3s;
+    }
+
+    #urlInput {
+      width: 100%;
+      background: var(--black2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 16px 18px 16px 48px;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      caret-color: var(--red);
+    }
+
+    #urlInput::placeholder { color: var(--text-dim); }
+
+    #urlInput:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-glow);
+    }
+
+    #urlInput:focus + .input-icon,
+    #urlInput:not(:placeholder-shown) + .input-icon {
+      /* icon viene prima nell'html, quindi uso sibling invertito */
+    }
+
+    .input-wrapper:focus-within .input-icon { color: var(--red); }
+
+    /* ── BUTTON GENERA ── */
+    #generateBtn {
+      width: 100%;
+      background: var(--red);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 18px 32px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #generateBtn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #generateBtn:hover:not(:disabled) {
+      background: var(--red-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(232,0,45,0.4);
+    }
+    #generateBtn:hover:not(:disabled)::before { opacity: 1; }
+    #generateBtn:active:not(:disabled) { transform: translateY(0); }
+    #generateBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-icon { font-size: 20px; }
+
+    /* ── PROGRESS ── */
+    #progressSection {
+      display: none;
+      margin-top: 28px;
+    }
+
+    .progress-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .progress-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .progress-bar-track {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--red), #ff4466);
+      border-radius: 100px;
+      width: 0%;
+      transition: width 0.6s ease;
+      animation: shimmer 1.5s infinite;
+      background-size: 200% 100%;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .progress-steps {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .step {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.3s;
+    }
+
+    .step.active { color: var(--text-muted); }
+    .step.done { color: #4ade80; }
+    .step-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ── RESULT ── */
+    #resultSection {
+      display: none;
+      margin-top: 40px;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .result-icon {
+      width: 40px; height: 40px;
+      background: rgba(74,222,128,0.1);
+      border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .result-meta h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #4ade80;
+    }
+
+    .result-meta p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+
+    /* Video + controls layout */
+    .result-layout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 600px) {
+      .result-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── VIDEO PREVIEW ── */
+    .video-container {
+      position: relative;
+      width: 180px;
+      aspect-ratio: 9 / 16;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      flex-shrink: 0;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+    }
+
+    @media (max-width: 600px) {
+      .video-container { width: 140px; margin: 0 auto; }
+    }
+
+    #reelVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+
+    .video-overlay:hover { opacity: 0.7; }
+    .video-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .play-btn {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: #000;
+    }
+
+    /* ── INFO + DOWNLOAD ── */
+    .result-info {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .info-block {
+      background: var(--black2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+    }
+
+    .info-block-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .info-block-value {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .stat {
+      flex: 1;
+      background: var(--black2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-value em {
+      font-style: normal;
+      color: var(--red);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Download button */
+    #downloadBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: transparent;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 24px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+
+    #downloadBtn:hover {
+      border-color: var(--gold);
+      background: rgba(200,164,90,0.06);
+      transform: translateY(-1px);
+    }
+
+    #newReelBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    #newReelBtn:hover { color: var(--text); border-color: var(--border-hover); }
+
+    /* ── ERROR ── */
+    #errorSection {
+      display: none;
+      margin-top: 24px;
+      background: rgba(232,0,45,0.08);
+      border: 1px solid rgba(232,0,45,0.25);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      display: none;
+    }
+
+    .error-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .error-header span {
+      font-weight: 600;
+      color: #ff6b6b;
+      font-size: 14px;
+    }
+
+    #errorMessage {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── TIPS ── */
+    .tips-section {
+      margin-top: 48px;
+    }
+
+    .tips-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .tips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .tip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .tip:hover { border-color: var(--border-hover); }
+
+    .tip-icon { font-size: 22px; margin-bottom: 8px; }
+
+    .tip h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tip p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 32px 0 0;
+      border-top: 1px solid var(--border);
+      margin-top: 64px;
+    }
+
+    footer p {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    footer a {
+      color: var(--red);
+      text-decoration: none;
+    }
+
+    footer a:hover { text-decoration: underline; }
+
+    /* ── ANIMAZIONI ENTRATA ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero { animation: fadeUp 0.6s ease both; }
+    .card { animation: fadeUp 0.6s 0.15s ease both; }
+    .tips-section { animation: fadeUp 0.6s 0.3s ease both; }
+
+    /* ── AUDIO WARNING ── */
+    .audio-warning {
+      display: none;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <img
+        class="brand-logo"
+        src="https://www.formulapaddock.it/wp-content/uploads/2026/05/preview.webp"
+        alt="FormulaPaddock logo"
+        id="headerLogo"
+        onerror="this.style.display='none'"
+      />
+      <div class="brand-text">
+        <h1>FormulaPaddock</h1>
+        <span>Reel Generator</span>
+      </div>
+    </div>
+    <div class="badge">F1 · 2026</div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">⚡ Powered by FFmpeg</div>
+    <h2>Genera il tuo<br /><em>Reel F1</em> in secondi</h2>
+    <p>Incolla un link di un articolo o pagina F1. Estraiamo titolo e immagini, aggiungiamo la musica e generiamo un reel verticale pronto per i social.</p>
+  </section>
+
+  <!-- CARD PRINCIPALE -->
+  <div class="card" id="mainCard">
+
+    <!-- INPUT URL -->
+    <div class="input-group">
+      <label class="input-label" for="urlInput">🔗 URL Articolo / Pagina F1</label>
+      <div class="input-wrapper">
+        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <input
+          type="url"
+          id="urlInput"
+          placeholder="https://www.formulapaddock.it/notizia-f1..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </div>
+
+    <!-- BUTTON -->
+    <button id="generateBtn" onclick="generateReel()">
+      <span class="btn-icon">🏎</span>
+      Genera Reel F1
+    </button>
+
+    <!-- PROGRESS -->
+    <div id="progressSection">
+      <div class="progress-header">
+        <div class="progress-label">
+          <div class="spinner"></div>
+          <span id="progressText">Elaborazione in corso...</span>
+        </div>
+        <span id="progressPct" style="font-size:12px;color:var(--text-dim)">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-steps">
+        <div class="step" id="step1"><div class="step-dot"></div> Scraping URL e immagini</div>
+        <div class="step" id="step2"><div class="step-dot"></div> Download immagini</div>
+        <div class="step" id="step3"><div class="step-dot"></div> Selezione musica</div>
+        <div class="step" id="step4"><div class="step-dot"></div> Generazione reel con FFmpeg</div>
+        <div class="step" id="step5"><div class="step-dot"></div> Finalizzazione MP4</div>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorSection" style="display:none">
+      <div class="error-header">
+        <span>⛔ Errore</span>
+      </div>
+      <p id="errorMessage">Si è verificato un errore durante la generazione.</p>
+    </div>
+
+  </div>
+
+  <!-- RESULT -->
+  <div id="resultSection">
+    <div class="card active">
+      <div class="result-header">
+        <div class="result-icon">✅</div>
+        <div class="result-meta">
+          <h3>Reel generato con successo!</h3>
+          <p id="resultSubtitle">Verticale 9:16 · 1080×1920 · MP4 · 6 secondi</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="result-layout">
+        <!-- Video preview -->
+        <div class="video-container" id="videoContainer">
+          <video id="reelVideo" playsinline loop muted></video>
+          <div class="video-overlay" id="videoOverlay" onclick="togglePlay()">
+            <div class="play-btn">▶</div>
+          </div>
+        </div>
+
+        <!-- Info + download -->
+        <div class="result-info">
+          <div class="info-block">
+            <div class="info-block-label">Titolo estratto</div>
+            <div class="info-block-value" id="resultTitle">—</div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat">
+              <div class="stat-value" id="statCategory" style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><em>F1</em></div>
+              <div class="stat-label">Categoria WP</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="statImages"><em>—</em></div>
+              <div class="stat-label">Immagini</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value"><em>6</em>s</div>
+              <div class="stat-label">Durata</div>
+            </div>
+          </div>
+
+          <a id="downloadBtn" href="#" download>
+            <span>⬇</span> Scarica MP4
+          </a>
+
+          <button id="newReelBtn" onclick="resetForm()">
+            ↩ Genera un altro reel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <section class="tips-section">
+    <div class="tips-title">Come funziona</div>
+    <div class="tips-grid">
+      <div class="tip">
+        <div class="tip-icon">🔗</div>
+        <h4>Incolla il link</h4>
+        <p>Qualsiasi URL di un articolo F1, tweet o pagina notizie di Formula 1.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🖼</div>
+        <h4>Estrazione automatica</h4>
+        <p>Il sistema scarica titolo e immagini direttamente dalla pagina.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🎵</div>
+        <h4>Musica casuale</h4>
+        <p>Aggiungi i tuoi file MP3 nella cartella <code>music/</code> del progetto.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">📱</div>
+        <h4>Formato social</h4>
+        <p>Output verticale 1080×1920 px, ottimizzato per Instagram, TikTok e Reels.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>
+      <a href="https://www.formulapaddock.it" target="_blank">FormulaPaddock.it</a>
+      &nbsp;·&nbsp; F1 Reel Generator &nbsp;·&nbsp; Powered by FFmpeg
+    </p>
+  </footer>
+
+</div><!-- /wrapper -->
+
+<script>
+  // ── State ──
+  let currentFilename = null;
+  let progressInterval = null;
+
+  // ── Steps UI ──
+  const STEPS = ['step1', 'step2', 'step3', 'step4', 'step5'];
+  const STEP_LABELS = [
+    'Scraping URL e immagini...',
+    'Download immagini...',
+    'Selezione musica...',
+    'Generazione reel con FFmpeg...',
+    'Finalizzazione MP4...'
+  ];
+  const STEP_PCT = [10, 30, 50, 75, 95];
+
+  function setStep(idx) {
+    STEPS.forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.className = 'step' + (i < idx ? ' done' : i === idx ? ' active' : '');
+    });
+    if (idx < STEPS.length) {
+      document.getElementById('progressText').textContent = STEP_LABELS[idx];
+      setProgress(STEP_PCT[idx]);
+    }
+  }
+
+  function setProgress(pct) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
+
+  // ── Generate ──
+  async function generateReel() {
+    const urlInput = document.getElementById('urlInput');
+    const url = urlInput.value.trim();
+
+    if (!url || !url.startsWith('http')) {
+      showError('Inserisci un URL valido che inizia con http:// o https://');
+      return;
+    }
+
+    // Reset UI
+    hideError();
+    document.getElementById('resultSection').style.display = 'none';
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('mainCard').classList.add('active');
+    STEPS.forEach(id => document.getElementById(id).className = 'step');
+    setProgress(0);
+
+    // Simula avanzamento step durante attesa
+    let stepIdx = 0;
+    setStep(0);
+
+    progressInterval = setInterval(() => {
+      if (stepIdx < 3) {
+        stepIdx++;
+        setStep(stepIdx);
+      }
+    }, 2500);
+
+    try {
+      const response = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Errore sconosciuto' }));
+        throw new Error(err.error || `Server error ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Step finale
+      setStep(4);
+      setProgress(100);
+      await sleep(600);
+
+      showResult(data);
+
+    } catch (err) {
+      clearInterval(progressInterval);
+      document.getElementById('progressSection').style.display = 'none';
+      document.getElementById('generateBtn').disabled = false;
+      document.getElementById('mainCard').classList.remove('active');
+      showError(err.message);
+    }
+  }
+
+  function showResult(data) {
+    currentFilename = data.filename;
+
+    // Nasconde progress, mostra result
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('generateBtn').disabled = false;
+
+    // Popola risultato
+    document.getElementById('resultTitle').textContent = data.title || '—';
+    document.getElementById('statCategory').innerHTML = `<em>${data.category || 'F1'}</em>`;
+    document.getElementById('statImages').innerHTML = `<em>${data.imagesUsed || '?'}</em>`;
+    document.getElementById('resultSubtitle').textContent =
+      `Categoria: ${data.category || 'FormulaPaddock'} · Verticale 9:16 · 1080×1920 · MP4 · 6s`;
+
+    // Video preview
+    const video = document.getElementById('reelVideo');
+    video.src = `/video/${data.filename}`;
+    video.load();
+
+    // Download link
+    const dlBtn = document.getElementById('downloadBtn');
+    dlBtn.href = `/download/${data.filename}`;
+    dlBtn.setAttribute('download', data.filename);
+
+    // Mostra sezione
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Autoplay dopo caricamento
+    video.addEventListener('canplay', () => {
+      video.play().catch(() => {});
+      document.getElementById('videoOverlay').classList.add('hidden');
+    }, { once: true });
+  }
+
+  function togglePlay() {
+    const video = document.getElementById('reelVideo');
+    const overlay = document.getElementById('videoOverlay');
+    if (video.paused) {
+      video.play();
+      overlay.classList.add('hidden');
+    } else {
+      video.pause();
+      overlay.classList.remove('hidden');
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('resultSection').style.display = 'none';
+    document.getElementById('mainCard').classList.remove('active');
+    document.getElementById('urlInput').value = '';
+    document.getElementById('urlInput').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showError(msg) {
+    const sec = document.getElementById('errorSection');
+    document.getElementById('errorMessage').textContent = msg;
+    sec.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('errorSection').style.display = 'none';
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  // Enter key
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') generateReel();
+  });
+</script>
+</body>
+</html>

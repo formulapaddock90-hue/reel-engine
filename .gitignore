@@ -1,12 +1,5 @@
-# Exports & temporary outputs
-/exports/*.webm
-/exports/*.mp4
-!/exports/.gitkeep
-
-# Python cache
-__pycache__/
-*.pyc
-
-# OS junk
+node_modules/
+output/
+temp/
+*.log
 .DS_Store
-Thumbs.db
