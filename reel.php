@@ -833,11 +833,15 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
       }
     }
 
-    // Auto-carica se passato param url nell'iframe
-    window.addEventListener('DOMContentLoaded', () => {
+    // Auto-carica ed esegue il rendering in automatico se passato param url
+    window.addEventListener('DOMContentLoaded', async () => {
       const u = document.getElementById('urlInput').value.trim();
       if (u.startsWith('http')) {
-        fetchAndPreview();
+        await fetchAndPreview();
+        // Avvio automatico immediato del rendering Reel
+        setTimeout(() => {
+          startClientRender();
+        }, 400);
       }
     });
   </script>
