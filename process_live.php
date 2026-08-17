@@ -398,8 +398,8 @@ try {
     }
 
     // Determina l'immagine sorgente del reel:
-    // 1) Video caricato manualmente (già MP4) → usa dispatchReelPublish legacy
-    // 2) Immagine infografica generata → usa ReelJobManager (background rendering)
+    // 1) Video caricato manualmente (già MP4) → usa dispatchReelPublish
+    // 2) Il Reel con le 3 scene dinamiche viene generato e pubblicato in automatico dal Generatore Nativo in pagina
     $uploadedVideoFile = null;
     if (!empty($_FILES['video']['tmp_name']) && file_exists($_FILES['video']['tmp_name'])) {
         $uploadedVideoFile = $_FILES['video']['tmp_name'];
@@ -409,49 +409,13 @@ try {
 
     $reelCaption = $title . "\n\n" . ($dynamicHashtags['tag_string'] ?? '#F1 #FormulaPaddock #Ferrari');
 
-    if (!empty($reelTargetPlatforms)) {
+    if (!empty($reelTargetPlatforms) && $uploadedVideoFile) {
         try {
-            $reelManager = new ReelJobManager($config);
-
-            if ($uploadedVideoFile) {
-                // ── Caso A: Video MP4 già pronto → dispatch pubblicazione diretta ──
-                $reelJobId   = dispatchReelPublish($uploadedVideoFile, $reelCaption, $reelTargetPlatforms, $config);
-                $reelJobData = getReelPublishStatus($reelJobId, $config);
-            } else {
-                // ── Caso B: Immagine infografica → background rendering + publish ──
-                $reelMode = detectReelMode($sourceUrl, $isLive);
-                $reelPoints = buildReelStoryPoints($sourceText, $title, $reelMode);
-                $articleImageForReel = !$isLive ? downloadArticleImageForReel($sourceUrl, $config) : null;
-                $sourceImageForReel = $articleImageForReel && file_exists($articleImageForReel)
-                    ? $articleImageForReel
-                    : (!empty($images['ig_image']) && file_exists($images['ig_image'])
-                    ? $images['ig_image']
-                    : (!empty($images['fb_image']) && file_exists($images['fb_image']) ? $images['fb_image'] : ''));
-
-                // Se non c'è nemmeno un'immagine generata, usa un placeholder vuoto
-                if (empty($sourceImageForReel)) {
-                    $sourceImageForReel = $config['output_images_dir'] ?? (__DIR__ . '/output/images');
-                    $sourceImageForReel = rtrim($sourceImageForReel, '/\\') . '/placeholder_reel_' . date('Ymd') . '.jpg';
-                }
-
-                $bgReelJobId = $reelManager->dispatchBackground(
-                    $sourceImageForReel,
-                    $reelCaption,
-                    $reelTargetPlatforms,
-                    [
-                        'duration'     => 15,
-                        'overlay_text' => $title,
-                        'article_url'  => $sourceUrl,
-                        'hashtags'     => $dynamicHashtags['tag_string'] ?? '',
-                        'is_live'      => $isLive,
-                        'reel_mode'    => $reelMode,
-                        'story_points' => $reelPoints,
-                        'article_image'=> $articleImageForReel,
-                    ]
-                );
-            }
+            // Pubblicazione diretta del video manuale se fornito
+            $reelJobId   = dispatchReelPublish($uploadedVideoFile, $reelCaption, $reelTargetPlatforms, $config);
+            $reelJobData = getReelPublishStatus($reelJobId, $config);
         } catch (Throwable $e) {
-            $driveErrors[] = "Reel Background Dispatcher: " . $e->getMessage();
+            $driveErrors[] = "Reel Dispatcher: " . $e->getMessage();
         }
     }
 
