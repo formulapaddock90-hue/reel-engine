@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
+# Install Python requirements
+RUN pip install --no-cache-dir google-genai
+
 # Copy application files
 COPY . /app
 
