@@ -412,6 +412,10 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
       <a id="dlBtn" class="btn-download" href="#" style="display:none;" download="reel_f1.mp4">
         <span>⬇</span> Scarica Video MP4
       </a>
+
+      <div id="pubStatusBadge" style="display:none; font-size:11.5px; text-align:center; padding:10px 12px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); border-radius:8px; width:100%; line-height:1.4;">
+        🟢 <strong>Invio a TikTok, IG & FB...</strong>
+      </div>
     </div>
   </div>
 
@@ -835,6 +839,34 @@ $initialUrl = trim((string)($_GET['init_url'] ?? ''));
           dlBtn.style.display = 'flex';
 
           genBtn.disabled = false;
+
+          // Auto-pubblicazione su TikTok, IG Reels e FB Reels con il VERO video renderizzato a 3 scene
+          const pubBadge = document.getElementById('pubStatusBadge');
+          if (pubBadge) {
+            pubBadge.style.display = 'block';
+            pubBadge.innerHTML = '⏳ <em>Invio video generato a TikTok, Instagram & Facebook...</em>';
+            pubBadge.style.color = 'var(--gold)';
+
+            const formData = new FormData();
+            formData.append('video', videoBlob, `reel_${Date.now()}.mp4`);
+            formData.append('title', metaData.title || 'Formula Paddock Reel');
+            formData.append('caption', (metaData.boom2 || metaData.title) + '\n\n' + (metaData.boom3 || '') + '\n\n#F1 #Formula1 #FormulaPaddock #Motorsport');
+            formData.append('article_url', url);
+
+            fetch('api/upload_rendered_reel.php', {
+              method: 'POST',
+              body: formData
+            }).then(r => r.json()).then(resp => {
+              if (resp.success) {
+                pubBadge.innerHTML = '🟢 <strong>Video Reel a 3 scene inviato con successo a TikTok, IG & FB!</strong>';
+                pubBadge.style.color = '#10B981';
+              } else {
+                pubBadge.innerHTML = '🟡 Video pronto per il download (Upload social opzionale).';
+              }
+            }).catch(e => {
+              pubBadge.innerHTML = '🟡 Video pronto e scaricabile con 3 box.';
+            });
+          }
         }, 400);
 
       } catch (err) {
