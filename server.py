@@ -34,6 +34,37 @@ ssl_ctx = ssl.create_default_context()
 ssl_ctx.check_hostname = False
 ssl_ctx.verify_mode = ssl.CERT_NONE
 
+def generate_veo_background(image_path, project_id, output_path, prompt):
+    """Generates a 5-second video clip using Google Veo (Vertex AI)."""
+    from google import genai
+    from google.genai import types
+    
+    if project_id:
+        client = genai.Client(http_options={'headers': {'X-Goog-User-Project': project_id}})
+    else:
+        client = genai.Client()
+        
+    image = types.Image.from_file(location=image_path)
+    config = types.GenerateVideosConfig(
+        aspect_ratio="9:16",
+        duration_seconds=5
+    )
+    
+    operation = client.models.generate_videos(
+        model="veo-2.0-generate-001",
+        prompt=prompt,
+        image=image,
+        config=config
+    )
+    
+    while not operation.done:
+        time.sleep(5)
+        operation = client.operations.get(operation.name)
+        
+    generated_video = operation.response.generated_videos[0]
+    generated_video.video.save(output_path)
+    return output_path
+
 class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def do_HEAD(self):
@@ -138,21 +169,80 @@ class ReelProxyHandler(http.server.BaseHTTPRequestHandler):
                     f"drawtext=text='SEGUI ORA'{font_part}:fontcolor=white:fontsize=28:x=(w-text_w)/2:y=800:enable='gte(t,12)'"
                 )
 
-                if chosen_audio and os.path.exists(chosen_audio):
-                    cmd = [
-                        'ffmpeg', '-y', '-loop', '1', '-i', input_img, '-i', chosen_audio,
-                        '-t', str(duration), '-vf', vf,
-                        '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
-                        '-c:a', 'aac', '-b:a', '128k',
-                        '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
-                    ]
+                # Try to use Google Veo if API key or Credentials JSON is available
+                veo_video_path = None
+                creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+                if creds_json or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                    if creds_json and not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                        temp_creds = os.path.join(EXPORTS_DIR, "google_credentials_temp.json")
+                        with open(temp_creds, "w", encoding="utf-8") as f:
+                            f.write(creds_json)
+                        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_creds
+
+                    try:
+                        proj_id = os.environ.get("GCLOUD_PROJECT") or "formula-paddock-analytics-api"
+                        prompt_style = os.environ.get("VEO_PROMPT_STYLE", "Formula 1 car driving on track, cinematic panning motion, photorealistic, 4k")
+                        
+                        clip_5s = os.path.join(EXPORTS_DIR, f"veo_clip_{int(time.time())}.mp4")
+                        generate_veo_background(input_img, proj_id, clip_5s, prompt_style)
+                        
+                        # Concat to 15 seconds
+                        looped_mp4 = os.path.join(EXPORTS_DIR, f"veo_looped_{int(time.time())}.mp4")
+                        concat_txt = os.path.join(EXPORTS_DIR, f"concat_{int(time.time())}.txt")
+                        with open(concat_txt, "w", encoding="utf-8") as f:
+                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
+                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
+                            f.write(f"file '{clip_5s.replace('\\', '/')}'\n")
+                            
+                        cmd_loop = ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', concat_txt, '-c', 'copy', looped_mp4]
+                        subprocess.run(cmd_loop, capture_output=True)
+                        
+                        if os.path.exists(looped_mp4):
+                            veo_video_path = looped_mp4
+                            
+                        # Cleanup temp files
+                        try:
+                            os.remove(concat_txt)
+                            os.remove(clip_5s)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        print(f"Veo failed, fallback to static image. Error: {e}", file=sys.stderr)
+
+                if veo_video_path and os.path.exists(veo_video_path):
+                    # Background is already a 15-second video!
+                    if chosen_audio and os.path.exists(chosen_audio):
+                        cmd = [
+                            'ffmpeg', '-y', '-i', veo_video_path, '-i', chosen_audio,
+                            '-t', str(duration), '-vf', vf,
+                            '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
+                            '-c:a', 'aac', '-b:a', '128k',
+                            '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
+                        ]
+                    else:
+                        cmd = [
+                            'ffmpeg', '-y', '-i', veo_video_path,
+                            '-t', str(duration), '-vf', vf,
+                            '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
+                            '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
+                        ]
                 else:
-                    cmd = [
-                        'ffmpeg', '-y', '-loop', '1', '-i', input_img,
-                        '-t', str(duration), '-vf', vf,
-                        '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
-                        '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
-                    ]
+                    # Fallback: Background is static image
+                    if chosen_audio and os.path.exists(chosen_audio):
+                        cmd = [
+                            'ffmpeg', '-y', '-loop', '1', '-i', input_img, '-i', chosen_audio,
+                            '-t', str(duration), '-vf', vf,
+                            '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
+                            '-c:a', 'aac', '-b:a', '128k',
+                            '-pix_fmt', 'yuv420p', '-shortest', '-movflags', '+faststart', output_mp4
+                        ]
+                    else:
+                        cmd = [
+                            'ffmpeg', '-y', '-loop', '1', '-i', input_img,
+                            '-t', str(duration), '-vf', vf,
+                            '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2',
+                            '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output_mp4
+                        ]
 
                 res = subprocess.run(cmd, capture_output=True, text=True)
 
