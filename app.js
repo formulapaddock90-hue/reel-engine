@@ -713,10 +713,10 @@ function drawCanvasReelFrame() {
     // Custom Brand Watermark Badge (Top Left)
     if (state.brandWatermark) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillStyle = 'rgba(8, 10, 17, 0.72)';
       ctx.fillRect(40, 60, 420, 80);
       ctx.strokeStyle = state.brand.color || '#e10600';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 2;
       ctx.strokeRect(40, 60, 420, 80);
 
       if (state.brand.logoImg) {
@@ -738,10 +738,10 @@ function drawCanvasReelFrame() {
       ctx.save();
       const simulatedSpeed = Math.floor(334 + (time * 1.8));
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillStyle = 'rgba(8, 10, 17, 0.72)';
       ctx.fillRect(width - 360, 60, 320, 160);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
       ctx.strokeRect(width - 360, 60, 320, 160);
 
       ctx.fillStyle = '#ffeb3b';
@@ -770,11 +770,14 @@ function drawCanvasReelFrame() {
       ctx.save();
       
       const boxY = height - 360;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.fillStyle = 'rgba(11, 15, 25, 0.78)';
       ctx.fillRect(60, boxY, width - 120, 240);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(60, boxY, width - 120, 240);
 
       ctx.fillStyle = state.brand.color || '#e10600';
-      ctx.fillRect(60, boxY, 16, 240);
+      ctx.fillRect(60, boxY, 8, 240);
 
       ctx.fillStyle = '#ffeb3b';
       ctx.font = 'bold 26px Outfit, sans-serif';
@@ -816,10 +819,10 @@ function drawSocialCtaOutroCard(width, height, time) {
   ctx.strokeRect(40, 40, width - 80, height - 80);
 
   // Inner Glow Box
-  ctx.fillStyle = 'rgba(20, 23, 36, 0.95)';
+  ctx.fillStyle = 'rgba(11, 15, 25, 0.82)';
   ctx.fillRect(80, 240, width - 160, height - 480);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
   ctx.strokeRect(80, 240, width - 160, height - 480);
 
   // Big Official FormulaPaddock Logo / Badge in Center
