@@ -1060,32 +1060,6 @@ try {
         </div>
     </div>
 
-    <!-- BANNER CON PULSANTE PER APRIRE IL REEL ENGINE CON URL PRE-CARICATO -->
-    <div class="cloud-banner">
-        <h2>🎬 REEL ENGINE 9:16 NATIVO — PRONTO PER QUESTA NOTIZIA</h2>
-        <p>Genera il Reel 1080x1920 con 3 scritte BOOM affiancate e grafica TV Breaking News:</p>
-        <a class="btn-launch" href="<?= htmlspecialchars($reelTargetUrl) ?>" target="_blank">🚀 APRI REEL ENGINE A SCHERMO INTERO &rarr;</a>
-    </div>
-
-    <!-- REEL ENGINE INTEGRATO NELLA PAGINA CON BOX AFFIANCATI -->
-    <div class="section" style="border: 2px solid var(--accent-red); background: #0c0e14;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h2 style="margin:0; font-size:18px; color:#fff; display:flex; align-items:center; gap:8px;">
-                <span style="color:var(--accent-red);">🎬</span> Generatore Reel F1 9:16 (Nativo & Box Affiancati)
-            </h2>
-            <a href="<?= htmlspecialchars($reelTargetUrl) ?>" target="_blank" style="font-size:12px; color:var(--accent-gold); text-decoration:none; font-weight:800; border:1px solid rgba(255,209,0,0.3); padding:5px 12px; border-radius:6px; background:rgba(255,209,0,0.08);">
-                ↗ Apri Scheda Intera
-            </a>
-        </div>
-        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
-            I 3 box di testo sono affiancati con l'articolo già caricato! Clicca su <strong>⚡ Genera Video Reel 9:16</strong> per renderizzare e scaricare direttamente l'MP4.
-        </p>
-
-        <div class="reel-iframe-box" style="height: 640px; border-color: rgba(225, 6, 0, 0.4);">
-            <iframe src="<?= htmlspecialchars($reelTargetUrl) ?>" title="Reel Engine 9:16 FormulaPaddock" allow="autoplay; microphone; camera; display-capture"></iframe>
-        </div>
-    </div>
-
     <?php if ($sheetError): ?>
         <div class="warn">⚠️ Riga NON scritta su Google Sheet: <?= htmlspecialchars($sheetError) ?></div>
     <?php else: ?>
@@ -1110,35 +1084,12 @@ try {
         <div class="warn">⚠️ <?= htmlspecialchars($de) ?></div>
     <?php endforeach; ?>
 
-    <!-- SEZIONE INFOGRAFICHE DINAMICHE -->
-    <div class="section">
-        <h2>📊 Infografiche <?= $isLive ? 'Live Timing 1080x1080 & 1080x1350' : 'Social Generate' ?></h2>
-        <div class="grid-images">
-            <div>
-                <h3 style="font-size: 14px; color: #fff;">🖼️ Formato Square (1080x1080) - Facebook / Feed</h3>
-                <?php if (!empty($images['fb_image']) && file_exists($images['fb_image'])): ?>
-                    <img class="infographic-preview" src="output/images/<?= htmlspecialchars(basename($images['fb_image'])) ?>" alt="Infografica Square">
-                <?php endif; ?>
-                <?php if ($fbImageDrive): ?>
-                    <br><a class="btn-mini btn-mini-drive" style="margin-top: 10px;" href="<?= htmlspecialchars($fbImageDrive['view_link']) ?>" target="_blank">🔗 Apri Immagine su Google Drive</a>
-                <?php endif; ?>
-            </div>
-            <div>
-                <h3 style="font-size: 14px; color: #fff;">📸 Formato Portrait (1080x1350) - Instagram / Storie</h3>
-                <?php if (!empty($images['ig_image']) && file_exists($images['ig_image'])): ?>
-                    <img class="infographic-preview" src="output/images/<?= htmlspecialchars(basename($images['ig_image'])) ?>" alt="Infografica Portrait">
-                <?php endif; ?>
-                <?php if ($igImageDrive): ?>
-                    <br><a class="btn-mini btn-mini-drive" style="margin-top: 10px;" href="<?= htmlspecialchars($igImageDrive['view_link']) ?>" target="_blank">🔗 Apri Immagine su Google Drive</a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- SEZIONE BOX SOCIAL GENERATI AFFIANCATI -->
-    <div style="margin-top: 28px; margin-bottom: 20px;">
-        <h2 style="font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-            <span style="color:var(--accent-gold);">📱</span> Box Social & Hashtag Generati (Affiancati)
+    <!-- ===================================================================== -->
+    <!-- 1°: SEZIONE BOX TESTI SOCIAL GENERATI AFFIANCATI                       -->
+    <!-- ===================================================================== -->
+    <div style="margin-top: 24px; margin-bottom: 24px;">
+        <h2 style="font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <span style="color:var(--accent-gold);">📱</span> 1. Testi Social & Hashtag Generati (Affiancati)
         </h2>
 
         <div class="social-boxes-grid">
@@ -1188,6 +1139,62 @@ try {
                 <pre id="srcUrlText"><?= htmlspecialchars($sourceUrl) ?></pre>
             </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 2°: SEZIONE INFOGRAFICHE DINAMICHE                                     -->
+    <!-- ===================================================================== -->
+    <div class="section" style="margin-bottom: 24px;">
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--accent-gold); margin-bottom: 16px;">
+            📊 2. Infografiche <?= $isLive ? 'Live Timing 1080x1080 & 1080x1350' : 'Social Generate' ?>
+        </h2>
+        <div class="grid-images">
+            <div>
+                <h3 style="font-size: 14px; color: #fff;">🖼️ Formato Square (1080x1080) - Facebook / Feed</h3>
+                <?php if (!empty($images['fb_image']) && file_exists($images['fb_image'])): ?>
+                    <img class="infographic-preview" src="output/images/<?= htmlspecialchars(basename($images['fb_image'])) ?>" alt="Infografica Square">
+                <?php endif; ?>
+                <?php if ($fbImageDrive): ?>
+                    <br><a class="btn-mini btn-mini-drive" style="margin-top: 10px;" href="<?= htmlspecialchars($fbImageDrive['view_link']) ?>" target="_blank">🔗 Apri Immagine su Google Drive</a>
+                <?php endif; ?>
+            </div>
+            <div>
+                <h3 style="font-size: 14px; color: #fff;">📸 Formato Portrait (1080x1350) - Instagram / Storie</h3>
+                <?php if (!empty($images['ig_image']) && file_exists($images['ig_image'])): ?>
+                    <img class="infographic-preview" src="output/images/<?= htmlspecialchars(basename($images['ig_image'])) ?>" alt="Infografica Portrait">
+                <?php endif; ?>
+                <?php if ($igImageDrive): ?>
+                    <br><a class="btn-mini btn-mini-drive" style="margin-top: 10px;" href="<?= htmlspecialchars($igImageDrive['view_link']) ?>" target="_blank">🔗 Apri Immagine su Google Drive</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 3°: SEZIONE REEL ENGINE 9:16 NATIVO                                    -->
+    <!-- ===================================================================== -->
+    <div class="cloud-banner">
+        <h2>🎬 3. REEL ENGINE 9:16 NATIVO — PRONTO PER QUESTA NOTIZIA</h2>
+        <p>Genera il Reel 1080x1920 con 3 scritte BOOM affiancate (una per ogni foto) e grafica TV Breaking News:</p>
+        <a class="btn-launch" href="<?= htmlspecialchars($reelTargetUrl) ?>" target="_blank">🚀 APRI REEL ENGINE A SCHERMO INTERO &rarr;</a>
+    </div>
+
+    <div class="section" style="border: 2px solid var(--accent-red); background: #0c0e14; margin-bottom: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2 style="margin:0; font-size:18px; color:#fff; display:flex; align-items:center; gap:8px;">
+                <span style="color:var(--accent-red);">🎬</span> Generatore Reel F1 9:16 (Nativo & Box Affiancati)
+            </h2>
+            <a href="<?= htmlspecialchars($reelTargetUrl) ?>" target="_blank" style="font-size:12px; color:var(--accent-gold); text-decoration:none; font-weight:800; border:1px solid rgba(255,209,0,0.3); padding:5px 12px; border-radius:6px; background:rgba(255,209,0,0.08);">
+                ↗ Apri Scheda Intera
+            </a>
+        </div>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+            I 3 box di testo sono affiancati con l'articolo già caricato! Clicca su <strong>⚡ Genera Video Reel 9:16</strong> per renderizzare e scaricare direttamente l'MP4.
+        </p>
+
+        <div class="reel-iframe-box" style="height: 640px; border-color: rgba(225, 6, 0, 0.4);">
+            <iframe src="<?= htmlspecialchars($reelTargetUrl) ?>" title="Reel Engine 9:16 FormulaPaddock" allow="autoplay; microphone; camera; display-capture"></iframe>
         </div>
     </div>
 
