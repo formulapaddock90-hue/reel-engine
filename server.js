@@ -8,6 +8,7 @@ const { execFile, execSync } = require('child_process');
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
+const crypto = require('crypto');
 
 // ─── Trova percorso ffmpeg ───
 function findFFmpeg() {
@@ -28,10 +29,13 @@ console.log('FFmpeg binary:', FFMPEG_BIN);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static('public'));
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://www.formulapaddock.it,https://formulapaddock.it')
+  .split(',').map(value => value.trim()).filter(Boolean);
+app.disable('x-powered-by');
+app.use(cors({ origin: allowedOrigins }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'FormulaPaddock F1 Reel Engine 2.0', uptime: process.uptime() });
@@ -45,9 +49,21 @@ const TEMP_DIR = path.join(__dirname, 'temp');
 });
 
 // ─── Download file ───
-function downloadFile(url, dest) {
+function parseRemoteUrl(value) {
+  let parsed;
+  try { parsed = new URL(value); } catch { throw new Error('URL non valido'); }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Protocollo URL non consentito');
+  const hostname = parsed.hostname.toLowerCase().replace(/\.$/, '');
+  const allowedHost = hostname === 'formulapaddock.it' || hostname.endsWith('.formulapaddock.it');
+  if (!allowedHost) throw new Error('Sono consentiti solo URL di formulapaddock.it');
+  return parsed;
+}
+
+function downloadFile(url, dest, redirects = 0) {
   return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
+    if (redirects > 5) return reject(new Error('Troppi reindirizzamenti'));
+    let parsedUrl;
+    try { parsedUrl = parseRemoteUrl(url); } catch (error) { return reject(error); }
     const proto = parsedUrl.protocol === 'https:' ? https : http;
     const file = fs.createWriteStream(dest);
     const request = proto.get(url, {
@@ -58,10 +74,12 @@ function downloadFile(url, dest) {
       },
       timeout: 15000
     }, (response) => {
-      if (response.statusCode === 301 || response.statusCode === 302) {
+      if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
         file.close();
         fs.unlink(dest, () => {});
-        return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+        if (!response.headers.location) return reject(new Error('Redirect senza destinazione'));
+        const redirectUrl = new URL(response.headers.location, parsedUrl).toString();
+        return downloadFile(redirectUrl, dest, redirects + 1).then(resolve).catch(reject);
       }
       if (response.statusCode !== 200) {
         file.close();
@@ -78,7 +96,8 @@ function downloadFile(url, dest) {
 
 // ─── WordPress API & Scraping ───
 async function scrapeUrl(url) {
-  const response = await fetch(url, {
+  const safeUrl = parseRemoteUrl(url).toString();
+  const response = await fetch(safeUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36' },
     timeout: 15000
   });
@@ -102,15 +121,13 @@ async function scrapeUrl(url) {
   description = description.replace(/\s+/g, ' ').trim().substring(0, 120);
 
   const imageUrls = new Set();
-  const baseUrl = new URL(url);
+  const baseUrl = new URL(safeUrl);
 
   const resolveUrl = (src) => {
     if (!src) return null;
     try {
-      if (src.startsWith('//')) return baseUrl.protocol + src;
-      if (src.startsWith('/')) return baseUrl.protocol + '//' + baseUrl.host + src;
-      if (src.startsWith('http')) return src;
-      return null;
+      const resolved = new URL(src, baseUrl);
+      return parseRemoteUrl(resolved.toString()).toString();
     } catch { return null; }
   };
 
@@ -224,7 +241,7 @@ function getImagesFromDriveFolder(folderPath) {
 async function getFormulaPaddockMedia(articleUrl) {
   let urlObj;
   try {
-    urlObj = new URL(articleUrl);
+    urlObj = parseRemoteUrl(articleUrl);
   } catch (e) {
     throw new Error('URL non valido');
   }
@@ -436,7 +453,7 @@ function buildFFmpegCommand(imagePaths, logoPath, musicPath, outputPath, title, 
       `[${i}:v]` +
       `scale=${oversizeW}:${oversizeH}:force_original_aspect_ratio=increase,` +
       `crop=w=${W}:h=${H}:x='(in_w-out_w)/2${panSign}((n/${frames}-0.5)*40)':y='(in_h-out_h)/2${panSign}((n/${frames}-0.5)*40)',` +
-      `fps=25,setsar=1[kb${i}]`
+      `eq=brightness=0.06:contrast=1.02:saturation=1.07:gamma=1.04,fps=25,setsar=1[kb${i}]`
     );
   });
 
@@ -463,7 +480,7 @@ function buildFFmpegCommand(imagePaths, logoPath, musicPath, outputPath, title, 
   );
 
   // 4. Box scuro testo in basso (attivo da t=0 a t=4.6)
-  F.push(`[vbadge]drawbox=x=0:y=1360:w=${W}:h=560:color=black@0.72:t=fill:enable='between(t,0,4.6)'[vbg]`);
+  F.push(`[vbadge]drawbox=x=0:y=1360:w=${W}:h=560:color=black@0.58:t=fill:enable='between(t,0,4.6)'[vbg]`);
 
   // 5. Linea decorativa rossa
   F.push(`[vbg]drawbox=x=50:y=1380:w=8:h=440:color=0xE8002D@1.0:t=fill:enable='between(t,0,4.6)'[vline]`);
@@ -511,7 +528,7 @@ function buildFFmpegCommand(imagePaths, logoPath, musicPath, outputPath, title, 
     const lY = Math.round((H - lW) / 2) - 120;
 
     // Sfondo oscurato elegante per outro
-    F.push(`[vmain_content]drawbox=x=0:y=0:w=${W}:h=${H}:color=black@0.88:t=fill:enable='between(t,4.6,6.0)'[voutro_bg]`);
+    F.push(`[vmain_content]drawbox=x=0:y=0:w=${W}:h=${H}:color=black@0.70:t=fill:enable='between(t,4.6,6.0)'[voutro_bg]`);
 
     // Logo animato in entrata/uscita al centro
     F.push(`[${logoIdx}:v]scale=${lW}:-1,fade=t=in:st=4.6:d=0.4,fade=t=out:st=5.8:d=0.2[logo_outro]`);
@@ -554,11 +571,9 @@ function buildFFmpegCommand(imagePaths, logoPath, musicPath, outputPath, title, 
 // ─── POST /generate ───
 app.post('/generate', async (req, res) => {
   const { url } = req.body;
-  if (!url || !url.startsWith('http')) {
-    return res.status(400).json({ error: 'URL non valido. Deve iniziare con http/https.' });
-  }
+  try { parseRemoteUrl(url); } catch (error) { return res.status(400).json({ error: error.message }); }
 
-  const sessionId = Date.now().toString();
+  const sessionId = crypto.randomUUID();
   const sessionTemp = path.join(TEMP_DIR, sessionId);
   fs.mkdirSync(sessionTemp, { recursive: true });
 
@@ -660,13 +675,14 @@ app.post('/api/render-reel', async (req, res) => {
   const targetUrl = payload.article_url || payload.url;
   const rawText = payload.text || payload.title || 'Formula Paddock F1 News';
 
-  const sessionId = Date.now().toString() + '_' + Math.random().toString(36).substring(2, 6);
+  const sessionId = crypto.randomUUID();
   const sessionTemp = path.join(TEMP_DIR, sessionId);
   fs.mkdirSync(sessionTemp, { recursive: true });
 
   try {
     let mediaData;
-    if (targetUrl && targetUrl.startsWith('http')) {
+    if (targetUrl) {
+      parseRemoteUrl(targetUrl);
       mediaData = await getFormulaPaddockMedia(targetUrl);
     } else {
       mediaData = {
@@ -684,7 +700,7 @@ app.post('/api/render-reel', async (req, res) => {
       try {
         if (fs.existsSync(imgUrl)) {
           fs.copyFileSync(imgUrl, imgPath);
-        } else if (imgUrl.startsWith('http')) {
+        } else if (typeof imgUrl === 'string') {
           await downloadFile(imgUrl, imgPath);
         }
         if (fs.existsSync(imgPath) && fs.statSync(imgPath).size > 3000) {
@@ -695,7 +711,9 @@ app.post('/api/render-reel', async (req, res) => {
     }
 
     if (downloadedImages.length === 0) {
-      downloadedImages.push(await ensureLogo());
+      const fallbackLogo = await ensureLogo();
+      if (!fallbackLogo) throw new Error('Nessuna immagine valida trovata e logo non disponibile.');
+      downloadedImages.push(fallbackLogo);
     }
 
     const logoPath = await ensureLogo();
@@ -771,6 +789,10 @@ app.get('/video/:filename', (req, res) => {
     const parts = range.replace(/bytes=/, '').split('-');
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= fileSize) {
+      res.setHeader('Content-Range', 'bytes */' + fileSize);
+      return res.status(416).end();
+    }
     const chunkSize = end - start + 1;
     res.writeHead(206, {
       'Content-Range': 'bytes ' + start + '-' + end + '/' + fileSize,

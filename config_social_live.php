@@ -17,7 +17,7 @@ return [
     'reel_cloud_url' => 'https://www.formulapaddock.it/seo/social/reel.php',
 
     // ===================== CHROME EXTENSION FACEBOOK GROUPS API =====================
-    'fb_extension_token' => $seoConfig['fb_extension_token'] ?? getenv('FB_EXTENSION_TOKEN') ?: 'f1_paddock_ext_sec_99a8b7c6d5e4',
+    'fb_extension_token' => $seoConfig['fb_extension_token'] ?? getenv('FB_EXTENSION_TOKEN') ?: '',
     'fb_extension_lease_seconds' => 300,
 
     // ===================== PROVIDER AI =====================
@@ -67,8 +67,8 @@ return [
     'buffer_share_mode'         => 'shareNow',
 
     // Credenziali native conservate solo per compatibilita; il worker usa Buffer.
-    'tiktok_client_key'         => 'awv11yg8p6dya9rv',
-    'tiktok_client_secret'      => 'TFhSbpzihzCAtNCsJWZUVnzAGvwKlFwG',
+    'tiktok_client_key'         => $seoConfig['tiktok_client_key'] ?? getenv('TIKTOK_CLIENT_KEY') ?: '',
+    'tiktok_client_secret'      => $seoConfig['tiktok_client_secret'] ?? getenv('TIKTOK_CLIENT_SECRET') ?: '',
     'tiktok_creator_token'      => $seoConfig['tiktok_creator_token'] ?? getenv('TIKTOK_CREATOR_TOKEN') ?: '',
     'tiktok_access_token'       => $seoConfig['tiktok_access_token'] ?? getenv('TIKTOK_ACCESS_TOKEN') ?: '',
     'tiktok_oauth_token_json'   => __DIR__ . '/credentials/tiktok-token.json',
@@ -95,8 +95,8 @@ return [
     'linkedin_author_urn'       => '',
 
     // ===================== THREADS NATIVO =====================
-    'threads_client_id'         => '921011200339541',
-    'threads_client_secret'     => '0d68d183941cd3e435af7b7cb29242c4',
+    'threads_client_id'         => $seoConfig['threads_client_id'] ?? getenv('THREADS_CLIENT_ID') ?: '',
+    'threads_client_secret'     => $seoConfig['threads_client_secret'] ?? getenv('THREADS_CLIENT_SECRET') ?: '',
     'threads_oauth_token_json'  => __DIR__ . '/credentials/threads-token.json',
 
     'ffmpeg_path' => (PHP_OS_FAMILY === 'Windows')

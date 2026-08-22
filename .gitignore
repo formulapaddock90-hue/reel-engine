@@ -1,5 +1,8 @@
 node_modules/
 output/
 temp/
+credentials/
+.env
+.env.*
 *.log
-.DS_Store
+!.env.example
