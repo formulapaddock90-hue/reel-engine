@@ -997,7 +997,7 @@ try {
                     <div>Deduplicazione: <strong><?= (!empty($queueResult['duplicate'])) ? 'Deduplicato' : 'Nuovo Post' ?></strong></div>
                 </div>
                 <div class="card-footer-links">
-                    <a href="api/pending_posts.php?mode=single&token=f1_paddock_ext_sec_99a8b7c6d5e4" target="_blank" class="btn-mini">📡 API Endpoint</a>
+                    <a href="api/pending_posts.php?mode=single&amp;token=<?= rawurlencode((string)($config['fb_extension_token'] ?? '')) ?>" target="_blank" class="btn-mini">📡 API Endpoint</a>
                     <?php if ($fbImageDrive): ?>
                         <a href="<?= htmlspecialchars($fbImageDrive['view_link']) ?>" target="_blank" class="btn-mini btn-mini-drive">🖼️ Img Drive</a>
                     <?php endif; ?>
@@ -1171,7 +1171,7 @@ try {
 <script>
     const reelJobId = <?= json_encode($reelJobId) ?>;
     const queuePostId = <?= json_encode($queueResult['id'] ?? $queueResult['post_id'] ?? null) ?>;
-    const extToken = 'f1_paddock_ext_sec_99a8b7c6d5e4';
+    const extToken = <?= json_encode((string)($config['fb_extension_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     function pollStatus() {
         // 1. Polling legacy Reel Publishing Status
