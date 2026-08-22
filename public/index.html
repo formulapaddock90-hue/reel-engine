@@ -946,7 +946,7 @@
     try {
       const response = await fetch('/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ url })
       });
 
@@ -957,7 +957,13 @@
         throw new Error(err.error || `Server error ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Risposta non valida dal Reel Engine (HTTP ${response.status}).`);
+      }
 
       // Step finale
       setStep(4);
@@ -984,8 +990,8 @@
 
     // Popola risultato
     document.getElementById('resultTitle').textContent = data.title || '—';
-    document.getElementById('statCategory').innerHTML = `<em>${data.category || 'F1'}</em>`;
-    document.getElementById('statImages').innerHTML = `<em>${data.imagesUsed || '?'}</em>`;
+    document.getElementById('statCategory').textContent = data.category || 'F1';
+    document.getElementById('statImages').textContent = data.imagesUsed || '?';
     document.getElementById('resultSubtitle').textContent =
       `Categoria: ${data.category || 'FormulaPaddock'} · Verticale 9:16 · 1080×1920 · MP4 · 6s`;
 
